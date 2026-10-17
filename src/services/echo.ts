@@ -54,6 +54,26 @@ function describeConnection(config: typeof serverConfig): string {
 
 let isFetchingConfig = false;
 
+// A failed config fetch would leave realtime dead for the session (guests never call getEcho again): retry with backoff
+const CONFIG_RETRY_MIN_MS = 2000;
+const CONFIG_RETRY_MAX_MS = 30000;
+let configRetryDelayMs = CONFIG_RETRY_MIN_MS;
+let configRetryTimer: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleConfigRetry() {
+  if (configRetryTimer || serverConfig) return;
+  configRetryTimer = setTimeout(async () => {
+    configRetryTimer = null;
+    await fetchBroadcastingConfig();
+    if (serverConfig) {
+      configRetryDelayMs = CONFIG_RETRY_MIN_MS;
+      return;
+    }
+    configRetryDelayMs = Math.min(CONFIG_RETRY_MAX_MS, configRetryDelayMs * 2);
+    scheduleConfigRetry();
+  }, configRetryDelayMs);
+}
+
 export async function fetchBroadcastingConfig(): Promise<any> {
   if (serverConfig) return serverConfig;
   if (isFetchingConfig) return null;
@@ -205,6 +225,8 @@ export function getEcho(): any {
     console.error('⚠️ [Echo Init Error] realtime unavailable:', err);
     echoInitFailed = true;
     useRoomStore.getState().setConnected(false);
+    // Once the config arrives, fetchBroadcastingConfig sees echoInitFailed and asks the rooms to re-join
+    scheduleConfigRetry();
     // Inert stub keeps callers from crashing; the offline banner is shown because isConnected stays false.
     return {
       join: () => ({

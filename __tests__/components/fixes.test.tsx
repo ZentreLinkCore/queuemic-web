@@ -186,3 +186,57 @@ describe('WebQueueList empty state (EC-02)', () => {
     expect(screen.getByText('Search songs to get the party started!')).toBeTruthy();
   });
 });
+
+describe('WebSongSearchModal Enter shortcut (code review #1)', () => {
+  beforeEach(() => {
+    useQueueStore.setState({ queue: [], currentPlaying: null });
+    useAuthStore.setState({ nickname: 'GuestUser' });
+    vi.mocked(songApi.searchSongs).mockResolvedValue({ success: true, data: [{ id: 5, externalVideoId: 'abc', title: 'Bohemian Rhapsody', artist: 'Queen', durationFormatted: '05:55', durationSeconds: 355, thumbnailUrl: '', sourceProvider: 'youtube' }] } as any);
+    vi.mocked(queueApi.addToQueue).mockReset();
+    vi.mocked(queueApi.addToQueue).mockResolvedValue({ success: true, data: makeItem(5) } as any);
+  });
+
+  it('submits the Singer Name as edited, not the default it opened with', async () => {
+    render(<WebSongSearchModal visible roomCode="ABC123" onClose={() => {}} />);
+
+    fireEvent.click(await screen.findByTitle('Queue this song'));
+    fireEvent.change(await screen.findByLabelText('Singer Name'), { target: { value: 'Duet Pair' } });
+    fireEvent.keyDown(window, { key: 'Enter' });
+
+    await waitFor(() =>
+      expect(queueApi.addToQueue).toHaveBeenCalledWith('ABC123', { songId: 5, singerName: 'Duet Pair' })
+    );
+  });
+});
+
+describe('WebSongSearchModal after closing with a song selected (verify v4 #13)', () => {
+  beforeEach(() => {
+    useQueueStore.setState({ queue: [], currentPlaying: null });
+    useAuthStore.setState({ nickname: 'GuestUser' });
+    vi.mocked(songApi.searchSongs).mockResolvedValue({ success: true, data: [{ id: 5, externalVideoId: 'abc', title: 'Bohemian Rhapsody', artist: 'Queen', durationFormatted: '05:55', durationSeconds: 355, thumbnailUrl: '', sourceProvider: 'youtube' }] } as any);
+    vi.mocked(queueApi.addToQueue).mockReset();
+    vi.mocked(queueApi.addToQueue).mockResolvedValue({ success: true, data: makeItem(5) } as any);
+  });
+
+  it('does not queue the song when Enter is pressed after the modal closed', async () => {
+    const { rerender } = render(<WebSongSearchModal visible roomCode="ABC123" onClose={() => {}} />);
+    fireEvent.click(await screen.findByTitle('Queue this song'));
+
+    rerender(<WebSongSearchModal visible={false} roomCode="ABC123" onClose={() => {}} />);
+    await act(async () => {
+      fireEvent.keyDown(window, { key: 'Enter' });
+    });
+
+    expect(queueApi.addToQueue).not.toHaveBeenCalled();
+  });
+
+  it('reopens with no song selected', async () => {
+    const { rerender } = render(<WebSongSearchModal visible roomCode="ABC123" onClose={() => {}} />);
+    fireEvent.click(await screen.findByTitle('Queue this song'));
+    rerender(<WebSongSearchModal visible={false} roomCode="ABC123" onClose={() => {}} />);
+    rerender(<WebSongSearchModal visible roomCode="ABC123" onClose={() => {}} />);
+
+    expect(await screen.findByTitle('Queue this song')).toBeTruthy();
+    expect(screen.queryByLabelText('Singer Name')).toBeNull();
+  });
+});
