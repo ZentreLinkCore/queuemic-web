@@ -4,14 +4,15 @@ import { Mic2, Radio, QrCode, Tv, Music, ArrowRight, Sparkles, LogIn } from 'luc
 import { GlassCard } from '../components/common/GlassCard';
 import { NeonButton } from '../components/common/NeonButton';
 import { useRoomStore } from '../store/useRoomStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { roomApi } from '../api/roomApi';
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
-  const { lastRoom, setLastRoom } = useRoomStore();
+  const { lastRoom, setLastRoom, setCurrentRoom } = useRoomStore();
   const [rejoining, setRejoining] = useState(false);
 
-  // Check if lastRoom is still active
+  // Check if lastRoom is still active on the server
   useEffect(() => {
     if (lastRoom?.code) {
       roomApi
@@ -25,10 +26,45 @@ export const HomePage: React.FC = () => {
     }
   }, [lastRoom?.code, setLastRoom]);
 
-  const handleRejoin = () => {
+  const handleRejoin = async () => {
     if (!lastRoom) return;
     setRejoining(true);
-    navigate(`/room/${lastRoom.code}`);
+    try {
+      const singerNickname = lastRoom.nickname || useAuthStore.getState().nickname || 'Singer';
+      const response = await roomApi.joinRoom({
+        roomCode: lastRoom.code,
+        nickname: singerNickname,
+        deviceUuid: useAuthStore.getState().deviceUuid,
+      });
+
+      if (response.success && response.data) {
+        useAuthStore.getState().setAuth({
+          token: response.data.token,
+          memberId: response.data.member.id,
+          nickname: response.data.member.nickname,
+          avatarColor: response.data.member.avatarColor || '#06B6D4',
+          role: 'guest',
+        });
+        setCurrentRoom(response.data.room);
+        setLastRoom({
+          code: response.data.room.code,
+          name: response.data.room.name,
+          nickname: response.data.member.nickname,
+        });
+        navigate(`/room/${response.data.room.code}`);
+      } else {
+        navigate(`/room/${lastRoom.code}`);
+      }
+    } catch (err: any) {
+      console.warn('Rejoin failed, navigating directly or clearing stale room:', err);
+      if (err?.code === 'ROOM_NOT_FOUND' || err?.status === 404) {
+        setLastRoom(null);
+      } else {
+        navigate(`/room/${lastRoom.code}`);
+      }
+    } finally {
+      setRejoining(false);
+    }
   };
 
   return (
@@ -79,7 +115,7 @@ export const HomePage: React.FC = () => {
         </p>
 
         {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto mb-10">
+        <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto mb-6">
           <NeonButton
             size="lg"
             variant="primary"
@@ -101,30 +137,57 @@ export const HomePage: React.FC = () => {
           </NeonButton>
         </div>
 
-        {/* Rejoin Card if active */}
+        {/* Previous Active Room Rejoin Card */}
         {lastRoom && (
-          <GlassCard
-            variant="surface"
-            glow="primary"
-            className="w-full max-w-md p-4 flex items-center justify-between gap-4 mb-8 text-left animate-slide-up"
-          >
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#C084FC]">
-                Recent Party Room
-              </span>
-              <h4 className="text-sm font-bold text-white truncate">{lastRoom.name}</h4>
-              <p className="text-xs text-slate-400 font-mono">Code: {lastRoom.code}</p>
-            </div>
-
-            <button
-              disabled={rejoining}
-              onClick={handleRejoin}
-              className="px-4 py-2 rounded-xl bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-xs font-bold transition-all shadow-md flex items-center gap-1 cursor-pointer shrink-0"
+          <div className="w-full max-w-md mb-8 animate-fade-in">
+            <GlassCard
+              variant="elevated"
+              glow="cyan"
+              className="p-4 sm:p-5 border-[#06B6D4]/40 bg-gradient-to-r from-[#06B6D4]/15 via-[#12131C] to-[#8B5CF6]/15 text-left shadow-lg"
             >
-              <span>Rejoin</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </GlassCard>
+              <div className="flex items-center justify-between gap-3 mb-2.5">
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                  </span>
+                  <span className="text-[11px] font-black uppercase tracking-wider text-emerald-400 font-['Outfit']">
+                    Previous Room Active
+                  </span>
+                </div>
+                {lastRoom.nickname && (
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-slate-300">
+                    🎤 {lastRoom.nickname}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <h4 className="text-base font-bold text-white truncate font-['Outfit']">
+                    {lastRoom.name || 'QueueMic Lounge'}
+                  </h4>
+                  <p className="text-xs text-slate-300 font-mono flex items-center gap-1.5 mt-0.5">
+                    <span>Code:</span>
+                    <span className="text-[#06B6D4] font-bold text-sm tracking-wider">
+                      {lastRoom.code}
+                    </span>
+                  </p>
+                </div>
+
+                <NeonButton
+                  size="sm"
+                  variant="primary"
+                  onClick={handleRejoin}
+                  loading={rejoining}
+                  icon={<ArrowRight className="w-4 h-4" />}
+                  className="shrink-0 px-4 py-2 font-bold shadow-[0_0_15px_rgba(6,182,212,0.35)]"
+                >
+                  ⚡️ Rejoin
+                </NeonButton>
+              </div>
+            </GlassCard>
+          </div>
         )}
 
         {/* Feature Highlights Grid */}

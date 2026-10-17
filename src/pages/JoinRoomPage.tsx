@@ -17,20 +17,76 @@ export const JoinRoomPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { setAuth, nickname: storedNickname, avatarColor: storedColor, setAvatarColor } = useAuthStore();
-  const { setCurrentRoom, setLastRoom } = useRoomStore();
+  const { lastRoom, setCurrentRoom, setLastRoom } = useRoomStore();
 
   const codeFromUrl = searchParams.get('code') || '';
   const [roomCode, setRoomCode] = useState(formatRoomCode(codeFromUrl));
   const [nickname, setNickname] = useState(storedNickname || '');
   const [selectedColor, setSelectedColor] = useState(storedColor || '#06B6D4');
   const [loading, setLoading] = useState(false);
+  const [rejoining, setRejoining] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Validate if lastRoom is still active
+  useEffect(() => {
+    if (lastRoom?.code) {
+      roomApi
+        .getRoomDetails(lastRoom.code)
+        .then((res) => {
+          if (!res.success || !res.data || res.data.status !== 'active') {
+            setLastRoom(null);
+          }
+        })
+        .catch(() => setLastRoom(null));
+    }
+  }, [lastRoom?.code, setLastRoom]);
 
   useEffect(() => {
     if (codeFromUrl) {
       setRoomCode(formatRoomCode(codeFromUrl));
     }
   }, [codeFromUrl]);
+
+  const handleRejoin = async () => {
+    if (!lastRoom) return;
+    setRejoining(true);
+    setError(null);
+    try {
+      const singerNickname = lastRoom.nickname || nickname.trim() || storedNickname || 'Guest Singer';
+      const response = await roomApi.joinRoom({
+        roomCode: lastRoom.code,
+        nickname: singerNickname,
+        deviceUuid: useAuthStore.getState().deviceUuid,
+      });
+
+      if (response.success && response.data) {
+        setAuth({
+          token: response.data.token,
+          memberId: response.data.member.id,
+          nickname: response.data.member.nickname,
+          avatarColor: selectedColor,
+          role: 'guest',
+        });
+        setCurrentRoom(response.data.room);
+        setLastRoom({
+          code: response.data.room.code,
+          name: response.data.room.name,
+          nickname: response.data.member.nickname,
+        });
+
+        navigate(`/room/${response.data.room.code}`);
+      } else {
+        navigate(`/room/${lastRoom.code}`);
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Room not found or session closed.');
+      if (err?.code === 'ROOM_NOT_FOUND' || err?.status === 404) {
+        setLastRoom(null);
+      }
+    } finally {
+      setRejoining(false);
+    }
+  };
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,6 +141,46 @@ export const JoinRoomPage: React.FC = () => {
         >
           <ArrowLeft className="w-4 h-4" /> Back to Home
         </button>
+
+        {/* Previous Active Room Rejoin Card */}
+        {lastRoom && (
+          <GlassCard
+            variant="elevated"
+            glow="cyan"
+            className="p-4 sm:p-5 mb-5 border-[#06B6D4]/40 bg-gradient-to-r from-[#06B6D4]/15 via-[#12131C] to-[#8B5CF6]/15 text-left shadow-lg animate-fade-in"
+          >
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <span className="text-[11px] font-black uppercase tracking-wider text-emerald-400 font-['Outfit'] flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                Previous Active Room
+              </span>
+              {lastRoom.nickname && (
+                <span className="text-[10px] text-slate-300 font-mono">
+                  🎤 {lastRoom.nickname}
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <h4 className="text-sm font-bold text-white truncate font-['Outfit']">
+                  {lastRoom.name || 'QueueMic Lounge'}
+                </h4>
+                <p className="text-xs text-[#06B6D4] font-mono font-bold">{lastRoom.code}</p>
+              </div>
+
+              <NeonButton
+                size="sm"
+                variant="primary"
+                onClick={handleRejoin}
+                loading={rejoining}
+                className="shrink-0 px-3.5 py-1.5 font-bold text-xs shadow-[0_0_12px_rgba(6,182,212,0.3)]"
+              >
+                ⚡️ Rejoin Room
+              </NeonButton>
+            </div>
+          </GlassCard>
+        )}
 
         <GlassCard variant="surface" glow="cyan" className="p-6 sm:p-8">
           <div className="flex items-center gap-3 mb-6">

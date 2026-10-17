@@ -39,7 +39,7 @@ export const GuestRoomPage: React.FC = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
-  const { currentRoom, members, leaveRoom } = useRoomStore();
+  const { currentRoom, members, leaveRoom, setLastRoom } = useRoomStore();
   const { memberId } = useAuthStore();
   const { currentPlaying, queue, moveItem, removeFromQueue } = useQueueStore();
   const {
@@ -62,6 +62,17 @@ export const GuestRoomPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'video' | 'progress'>('video');
   const [isMuted, setIsMuted] = useState(true);
 
+  // Keep lastRoom updated in persistent storage so guest can rejoin from Home
+  useEffect(() => {
+    if (roomCode) {
+      setLastRoom({
+        code: roomCode.toUpperCase(),
+        name: currentRoom?.name || `QueueMic ${roomCode.toUpperCase()}`,
+        nickname: useAuthStore.getState().nickname || 'Singer',
+      });
+    }
+  }, [roomCode, currentRoom?.name, setLastRoom]);
+
   // Set duration immediately when current track is loaded
   useEffect(() => {
     if (currentPlaying?.song?.durationSeconds) {
@@ -73,6 +84,7 @@ export const GuestRoomPage: React.FC = () => {
   useEchoRoom(roomCode, false, {
     onRoomClosed: (reason) => {
       alert(reason || 'The karaoke party session has ended.');
+      setLastRoom(null);
       leaveRoom();
       navigate('/');
     },
@@ -174,6 +186,13 @@ export const GuestRoomPage: React.FC = () => {
 
   const handleLeaveRoom = () => {
     if (!window.confirm('Leave this karaoke room?')) return;
+    if (roomCode) {
+      setLastRoom({
+        code: roomCode.toUpperCase(),
+        name: currentRoom?.name || `QueueMic ${roomCode.toUpperCase()}`,
+        nickname: useAuthStore.getState().nickname || 'Singer',
+      });
+    }
     roomApi.leaveRoom(roomCode).catch(() => {});
     leaveRoom();
     navigate('/');
