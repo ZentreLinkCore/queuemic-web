@@ -472,6 +472,7 @@ export const GuestRoomPage: React.FC = () => {
                       currentSong={currentPlaying}
                       playbackState={playbackState}
                       isHost={false}
+                      showOutsideControls={false}
                     />
                   </div>
                 )}

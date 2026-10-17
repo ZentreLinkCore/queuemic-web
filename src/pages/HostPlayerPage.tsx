@@ -325,11 +325,11 @@ export const HostPlayerPage: React.FC = () => {
             ⚙️
           </button>
 
-          {/* End Room Button */}
+          {/* End Room Button (Hidden on mobile view, shown on desktop) */}
           <button
             type="button"
             onClick={handleCloseRoom}
-            className="w-[38px] h-[38px] rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 flex items-center justify-center active:scale-95 transition-all cursor-pointer ml-0.5"
+            className="hidden lg:flex w-[38px] h-[38px] rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 items-center justify-center active:scale-95 transition-all cursor-pointer ml-0.5"
             title="End Session"
           >
             <Power className="w-4 h-4" />
@@ -379,6 +379,8 @@ export const HostPlayerPage: React.FC = () => {
               currentTimeSeconds={currentTimeSeconds}
               durationSeconds={durationSeconds}
               isHost={true}
+              canControlPlayback={true}
+              showOutsideControls={true}
             />
           </div>
 

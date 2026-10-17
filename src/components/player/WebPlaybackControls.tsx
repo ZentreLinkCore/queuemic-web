@@ -30,7 +30,7 @@ export const WebPlaybackControls: React.FC<WebPlaybackControlsProps> = ({
   durationSeconds = 0,
   canControlPlayback = true,
   isHost = true,
-  showOutsideControls = false,
+  showOutsideControls,
 }) => {
   const isPlaying = Boolean(currentSong && playbackState === 'playing');
   const isBuffering = Boolean(currentSong && playbackState === 'buffering');
