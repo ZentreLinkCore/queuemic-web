@@ -194,12 +194,12 @@ export const CreateRoomPage: React.FC = () => {
             {/* Active Hosted Room Info Card */}
             <div className="p-5 rounded-2xl bg-white/[0.04] border border-[#8B5CF6]/30 mb-5">
               <div className="flex items-center justify-between gap-2 mb-3">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-bold">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>Live Session In Progress</span>
-                </div>
-                <span className="text-[10px] font-bold text-[#A78BFA] bg-[#8B5CF6]/15 px-2.5 py-1 rounded-full border border-[#8B5CF6]/30 uppercase tracking-wider">
-                  👑 You are Host
+                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-400 font-['Outfit'] whitespace-nowrap">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                  Live Session
+                </span>
+                <span className="text-[11px] font-bold text-[#A78BFA] bg-[#8B5CF6]/15 px-2.5 py-0.5 rounded-full border border-[#8B5CF6]/30 whitespace-nowrap shrink-0">
+                  👑 Host
                 </span>
               </div>
 
