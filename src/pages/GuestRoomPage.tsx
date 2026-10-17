@@ -4,8 +4,10 @@ import { Copy, Check, Tv, Activity } from 'lucide-react';
 import { useRoomStore } from '../store/useRoomStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useQueueStore } from '../store/useQueueStore';
-import { usePlaybackStore, getLivePlaybackPosition } from '../store/usePlaybackStore';
+import { usePlaybackStore } from '../store/usePlaybackStore';
 import { useEchoRoom } from '../hooks/useEchoRoom';
+import { useRoomQueueActions } from '../hooks/useRoomQueueActions';
+import { useRoomPlayPause } from '../hooks/useRoomPlayPause';
 import { WebVideoPlayer } from '../components/player/WebVideoPlayer';
 import { WebGuestProgressBar } from '../components/player/WebGuestProgressBar';
 import { WebPlaybackControls } from '../components/player/WebPlaybackControls';
@@ -15,9 +17,7 @@ import { WebQRCodeDisplay } from '../components/room/WebQRCodeDisplay';
 import { WebMemberListModal } from '../components/room/WebMemberListModal';
 import { WebSongSearchModal } from '../components/search/WebSongSearchModal';
 import { roomApi } from '../api/roomApi';
-import { queueApi } from '../api/queueApi';
 import { playbackApi } from '../api/playbackApi';
-import { runOptimistic } from '../utils/optimistic';
 import { WebConnectionBanner } from '../components/common/WebConnectionBanner';
 import { WebToast } from '../components/common/WebToast';
 
@@ -49,14 +49,13 @@ const GuestRoom: React.FC<{ roomCode: string }> = ({ roomCode }) => {
 
   const { currentRoom, members, leaveRoom, setLastRoom } = useRoomStore();
   const { memberId } = useAuthStore();
-  const { currentPlaying, queue, moveItem, removeFromQueue, setQueue, reorderQueue } = useQueueStore();
+  const { currentPlaying, queue } = useQueueStore();
   const {
     state: playbackState,
     currentTimeSeconds,
     durationSeconds,
     syncAnchor,
     isFullscreen,
-    setState: setPlaybackState,
     setCurrentTime,
     setDuration,
     setFullscreen,
@@ -118,36 +117,15 @@ const GuestRoom: React.FC<{ roomCode: string }> = ({ roomCode }) => {
     false
   );
 
+  const { handleMoveItem, handleReorderItem, handleRemoveItem } = useRoomQueueActions(roomCode, { canReorder });
+
   const handleCopyCode = () => {
     navigator.clipboard.writeText(roomCode.toUpperCase());
     setCopiedCode(true);
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
-  const handlePlayPause = async () => {
-    if (!canControlPlayback) return;
-    const nextState = playbackState === 'playing' ? 'paused' : 'playing';
-    const position = Math.max(0, Math.round(getLivePlaybackPosition() * 100) / 100);
-    const prev = { state: playbackState, time: currentTimeSeconds, anchor: syncAnchor };
-    await runOptimistic(
-      () => {
-        setPlaybackState(nextState);
-        setCurrentTime(position);
-        setSyncAnchor({
-          queueItemId: currentPlaying?.id ?? null,
-          state: nextState,
-          positionSeconds: position,
-          receivedAtMs: Date.now(),
-        });
-      },
-      () => {
-        setPlaybackState(prev.state);
-        setCurrentTime(prev.time);
-        setSyncAnchor(prev.anchor);
-      },
-      () => playbackApi.updatePlaybackState(roomCode, nextState, position, currentPlaying?.id)
-    );
-  };
+  const handlePlayPause = useRoomPlayPause(roomCode, { canControl: canControlPlayback });
 
   const handleSkip = async () => {
     if (!canControlPlayback) return;
@@ -173,45 +151,6 @@ const GuestRoom: React.FC<{ roomCode: string }> = ({ roomCode }) => {
     } catch (err) {
       console.warn('Seek error:', err);
     }
-  };
-
-  const restoreQueue = async () => {
-    try {
-      const res = await queueApi.getQueue(roomCode);
-      if (res.success && Array.isArray(res.data)) {
-        const currentId = useQueueStore.getState().currentPlaying?.id;
-        setQueue(res.data.filter((item) => item.id !== currentId));
-      }
-    } catch (err) {
-      console.warn('Queue resync error:', err);
-    }
-  };
-
-  const handleMoveItem = async (queueId: number, direction: 'up' | 'down' | 'top' | 'bottom') => {
-    if (!canReorder) return;
-    await runOptimistic(
-      () => moveItem(queueId, direction),
-      restoreQueue,
-      () => queueApi.moveQueueItem(roomCode, queueId, { direction })
-    );
-  };
-
-  const handleReorderItem = async (queueId: number, targetPosition: number) => {
-    if (!canReorder) return;
-    const fromIndex = queue.findIndex((q) => q.id === queueId);
-    await runOptimistic(
-      () => reorderQueue(fromIndex, targetPosition - 1),
-      restoreQueue,
-      () => queueApi.moveQueueItem(roomCode, queueId, { target_position: targetPosition })
-    );
-  };
-
-  const handleRemoveItem = async (queueId: number) => {
-    await runOptimistic(
-      () => removeFromQueue(queueId),
-      restoreQueue,
-      () => queueApi.removeFromQueue(roomCode, queueId)
-    );
   };
 
   const handleLeaveRoom = () => {
