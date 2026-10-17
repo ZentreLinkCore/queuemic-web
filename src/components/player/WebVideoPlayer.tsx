@@ -673,6 +673,17 @@ export const WebVideoPlayer: React.FC<WebVideoPlayerProps> = ({
   const songArtist = currentSong.song?.artist || 'YouTube';
   const singerName = (currentSong.singerName || 'Singer').toUpperCase();
 
+  const muteToggleButton = onToggleMute && (
+    <button
+      type="button"
+      onClick={handleToggleMute}
+      className="p-2 rounded-xl bg-black/50 hover:bg-white/15 text-slate-300 hover:text-white transition-colors cursor-pointer border border-white/10"
+      title={muted || webAutoMuted ? 'Unmute' : 'Mute'}
+    >
+      {muted || webAutoMuted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4" />}
+    </button>
+  );
+
   const effectiveCurrentTime = localTime > 0 ? localTime : currentTimeSeconds;
   const effectiveDuration =
     localDuration > 0
@@ -864,16 +875,7 @@ export const WebVideoPlayer: React.FC<WebVideoPlayerProps> = ({
             </button>
           )}
 
-          {onToggleMute && (
-            <button
-              type="button"
-              onClick={handleToggleMute}
-              className="p-2 rounded-xl bg-black/50 hover:bg-white/15 text-slate-300 hover:text-white transition-colors cursor-pointer border border-white/10"
-              title={muted || webAutoMuted ? 'Unmute' : 'Mute'}
-            >
-              {muted || webAutoMuted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4" />}
-            </button>
-          )}
+          {muteToggleButton}
 
           <button
             type="button"
@@ -885,6 +887,18 @@ export const WebVideoPlayer: React.FC<WebVideoPlayerProps> = ({
           </button>
         </div>
       </div>
+      )}
+
+      {/* Phone-width windowed view hides the banner and bottom bar: keep the viewer's mute toggle and the browser-muted notice reachable */}
+      {isMobile && !isFullscreen && muteToggleButton && (
+        <div className="absolute top-2 right-2 z-40 flex items-center gap-1.5">
+          {webAutoMuted && (
+            <span className="text-amber-400 text-[10px] font-semibold bg-black/60 px-2 py-0.5 rounded border border-amber-400/20">
+              Audio Muted by Browser
+            </span>
+          )}
+          {muteToggleButton}
+        </div>
       )}
 
       {/* On-screen TV QR overlay when toggled */}

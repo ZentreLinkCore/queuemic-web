@@ -481,3 +481,63 @@ describe('WebVideoPlayer guest returning to a hidden tab (EC-07)', () => {
     expect(player.playVideo).not.toHaveBeenCalled();
   });
 });
+
+describe('WebVideoPlayer guest mute toggle on a phone-width screen (FR-08, Finding #12)', () => {
+  const desktopWidth = window.innerWidth;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    FakeYouTubePlayer.instances = [];
+    (window as any).YT = { Player: FakeYouTubePlayer, PlayerState: YT_STATE };
+    // Phone layout: the banner and bottom bar overlays are hidden below 1024 px
+    window.innerWidth = 390;
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    delete (window as any).YT;
+    window.innerWidth = desktopWidth;
+  });
+
+  const renderGuest = async (muted: boolean, onToggleMute = vi.fn()) => {
+    render(
+      <WebVideoPlayer
+        currentSong={syncSong}
+        playbackState="playing"
+        syncAnchor={anchorAt('playing', 0)}
+        followHost
+        muted={muted}
+        onToggleMute={onToggleMute}
+      />
+    );
+    await act(async () => {});
+    const player = FakeYouTubePlayer.instances[0];
+    act(() => player.ready());
+    return player;
+  };
+
+  it('lets a muted guest unmute without going fullscreen', async () => {
+    const onToggleMute = vi.fn();
+    await renderGuest(true, onToggleMute);
+
+    fireEvent.click(screen.getByTitle('Unmute'));
+
+    expect(onToggleMute).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows a browser-muted autoplay as muted, and one tap brings the sound back', async () => {
+    const onToggleMute = vi.fn();
+    const player = await renderGuest(false, onToggleMute);
+
+    // The browser refused to autoplay with sound: nothing started, so the player retries muted
+    act(() => vi.advanceTimersByTime(1200));
+    expect(screen.getByText(/Audio Muted by Browser/i)).toBeDefined();
+
+    fireEvent.click(screen.getByTitle('Unmute'));
+
+    expect(player.unMute).toHaveBeenCalledTimes(2);
+    expect(onToggleMute).not.toHaveBeenCalled();
+    expect(screen.getByTitle('Mute')).toBeDefined();
+    expect(screen.queryByText(/Audio Muted by Browser/i)).toBeNull();
+  });
+});
