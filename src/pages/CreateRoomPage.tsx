@@ -115,8 +115,8 @@ export const CreateRoomPage: React.FC = () => {
                     </span>
                   </div>
                 </div>
-                <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                  👑 Host Profile
+                <span className="text-[10px] font-bold text-[#A78BFA] bg-[#8B5CF6]/15 px-2 py-0.5 rounded-full border border-[#8B5CF6]/30 uppercase tracking-wider">
+                  👑 TV / Sound Host
                 </span>
               </div>
             ) : (

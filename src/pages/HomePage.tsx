@@ -145,7 +145,7 @@ export const HomePage: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsNicknameModalOpen(true)}
-              className="text-[11px] font-bold text-[#06B6D4] hover:text-[#22D3EE] px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all cursor-pointer shrink-0"
+              className="text-[11px] font-bold text-[#A78BFA] hover:text-white px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all cursor-pointer shrink-0"
             >
               {nickname ? '✏️ Change' : '+ Set'}
             </button>
@@ -171,7 +171,7 @@ export const HomePage: React.FC = () => {
             with sub-second synchronization and zero latency drift.
           </p>
 
-          {/* Action Buttons: Clean & sleek matching mobapp without heavy blur shadows */}
+          {/* Action Buttons: Themed with exact mobapp primary (Cyber Violet) and secondary (Electric Cyan) */}
           <div className="flex flex-col gap-3.5 w-full max-w-sm mb-2">
             <NeonButton
               size="lg"
@@ -185,10 +185,10 @@ export const HomePage: React.FC = () => {
 
             <NeonButton
               size="lg"
-              variant="outline"
+              variant="secondary"
               onClick={handleJoinPress}
               icon={<span className="text-xl">📱</span>}
-              className="w-full py-3.5 text-sm sm:text-base font-bold border border-[#06B6D4]/30 bg-[#06B6D4]/10 hover:bg-[#06B6D4]/15 text-[#22D3EE] flex items-center justify-center gap-2"
+              className="w-full py-3.5 text-sm sm:text-base font-extrabold flex items-center justify-center gap-2"
             >
               Join as Singer
             </NeonButton>

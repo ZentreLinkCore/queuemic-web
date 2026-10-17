@@ -246,8 +246,8 @@ export const JoinRoomPage: React.FC = () => {
                     </span>
                   </div>
                 </div>
-                <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                  Singer Profile
+                <span className="text-[10px] font-bold text-[#06B6D4] bg-[#06B6D4]/15 px-2 py-0.5 rounded-full border border-[#06B6D4]/30 uppercase tracking-wider">
+                  Guest Singer
                 </span>
               </div>
             ) : (

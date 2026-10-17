@@ -2,7 +2,7 @@ import React from 'react';
 import { Loader2 } from 'lucide-react';
 
 export interface NeonButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'danger' | 'ghost';
+  variant?: 'primary' | 'secondary' | 'accent' | 'outline' | 'danger' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
   icon?: React.ReactNode;
@@ -27,15 +27,17 @@ export const NeonButton: React.FC<NeonButtonProps> = ({
 
   const variantStyles = {
     primary:
-      'bg-gradient-to-r from-[#8B5CF6] to-[#EC4899] text-white hover:brightness-105 active:scale-[0.98]',
+      'bg-gradient-to-r from-[#8B5CF6] to-[#EC4899] text-white font-bold hover:brightness-105 active:scale-[0.98]',
     secondary:
-      'bg-[#06B6D4] text-white hover:brightness-105 active:scale-[0.98]',
+      'bg-[#06B6D4] text-[#0A0A0F] font-extrabold hover:bg-[#22D3EE] active:scale-[0.98]',
+    accent:
+      'bg-[#F59E0B] text-[#0A0A0F] font-extrabold hover:bg-[#FBBF24] active:scale-[0.98]',
     outline:
-      'border border-white/15 hover:border-white/30 text-slate-200 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] active:scale-[0.98]',
+      'border border-white/15 hover:border-white/30 text-[#F8FAFC] bg-white/[0.04] hover:bg-white/[0.08] active:scale-[0.98]',
     danger:
       'bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 active:scale-[0.98]',
     ghost:
-      'text-slate-400 hover:text-white hover:bg-white/[0.06] active:scale-[0.98]',
+      'text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-white/[0.06] active:scale-[0.98]',
   }[variant];
 
   return (
