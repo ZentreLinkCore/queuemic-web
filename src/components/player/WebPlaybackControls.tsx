@@ -48,7 +48,10 @@ export const WebPlaybackControls: React.FC<WebPlaybackControlsProps> = ({
   const songTitle = currentSong?.song?.title || (currentSong ? 'Karaoke Track' : null);
   const songArtist = currentSong?.song?.artist;
 
-  const shouldShowControlsBar = Boolean(showOutsideControls || (isHost && canControlPlayback));
+  const shouldShowControlsBar =
+    typeof showOutsideControls === 'boolean'
+      ? showOutsideControls
+      : Boolean(isHost && canControlPlayback);
 
   return (
     <div
@@ -70,9 +73,13 @@ export const WebPlaybackControls: React.FC<WebPlaybackControlsProps> = ({
           />
           <span className="text-[#94A3B8] font-black tracking-[0.8px] text-[10px] uppercase">
             {isPlaying
-              ? 'STAGE LIVE'
+              ? isHost
+                ? 'STAGE LIVE'
+                : 'LIVE TV SYNC'
               : isBuffering
-              ? 'TUNING...'
+              ? isHost
+                ? 'TUNING...'
+                : 'SYNCING...'
               : 'PAUSED'}
           </span>
         </div>

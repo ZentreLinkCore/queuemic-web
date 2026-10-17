@@ -455,7 +455,8 @@ export const HostPlayerPage: React.FC = () => {
                   <WebPlaybackControls
                     currentSong={currentPlaying}
                     playbackState={playbackState}
-                    isHost={false}
+                    isHost={true}
+                    showOutsideControls={false}
                   />
                 </div>
               )}
