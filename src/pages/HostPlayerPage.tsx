@@ -415,32 +415,50 @@ export const HostPlayerPage: React.FC = () => {
               : 'p-3 sm:p-4 md:p-5 flex flex-col lg:flex-row gap-4 h-[calc(100vh-56px)] max-w-[1920px] mx-auto overflow-hidden'
           }`}
         >
-          {/* Left Column: Video Stage */}
+          {/* Left Column: Video Stage with Stage Live below */}
           <div className={isFullscreen ? 'w-full h-full' : 'flex-1 h-full min-h-0 min-w-0 flex flex-col'}>
-            <div className="flex-1 min-h-0 w-full overflow-hidden">
-              <WebVideoPlayer
-                currentSong={currentPlaying}
-                playbackState={playbackState}
-                isFullscreen={isFullscreen}
-                roomCode={roomCode}
-                nextSong={queue[0] || null}
-                queueCount={queue.length}
-                onOpenSearch={() => setIsSearchModalVisible(true)}
-                onOpenQueue={() => setIsQueueDrawerOpen(true)}
-                onSongEnd={handleNext}
-                onPlayPause={handlePlayPause}
-                onSkip={handleSkip}
-                onSeek={handleSeek}
-                seekTarget={seekTarget}
-                onToggleFullscreen={handleToggleFullscreen}
-                currentTimeSeconds={currentTimeSeconds}
-                durationSeconds={durationSeconds}
-                syncAnchor={syncAnchor}
-                onTimeUpdate={(cur, dur) => {
-                  setCurrentTime(cur);
-                  setDuration(dur);
-                }}
-              />
+            <div
+              className={
+                isFullscreen
+                  ? 'w-full h-full'
+                  : 'w-full h-full flex flex-col bg-black rounded-2xl overflow-hidden border border-white/[0.08]'
+              }
+            >
+              <div className="flex-1 min-h-0 w-full relative overflow-hidden bg-black">
+                <WebVideoPlayer
+                  currentSong={currentPlaying}
+                  playbackState={playbackState}
+                  isFullscreen={isFullscreen}
+                  roomCode={roomCode}
+                  nextSong={queue[0] || null}
+                  queueCount={queue.length}
+                  onOpenSearch={() => setIsSearchModalVisible(true)}
+                  onOpenQueue={() => setIsQueueDrawerOpen(true)}
+                  onSongEnd={handleNext}
+                  onPlayPause={handlePlayPause}
+                  onSkip={handleSkip}
+                  onSeek={handleSeek}
+                  seekTarget={seekTarget}
+                  onToggleFullscreen={handleToggleFullscreen}
+                  currentTimeSeconds={currentTimeSeconds}
+                  durationSeconds={durationSeconds}
+                  syncAnchor={syncAnchor}
+                  onTimeUpdate={(cur, dur) => {
+                    setCurrentTime(cur);
+                    setDuration(dur);
+                  }}
+                />
+              </div>
+
+              {!isFullscreen && (
+                <div className="shrink-0">
+                  <WebPlaybackControls
+                    currentSong={currentPlaying}
+                    playbackState={playbackState}
+                    isHost={false}
+                  />
+                </div>
+              )}
             </div>
           </div>
 
