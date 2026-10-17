@@ -44,7 +44,6 @@ export const WebSongSearchModal: React.FC<WebSongSearchModalProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [recentlyQueuedIds, setRecentlyQueuedIds] = useState<Set<number>>(new Set());
-  const [singerName, setSingerName] = useState('');
 
   const debouncedQuery = useDebounce(query, 300);
 
@@ -56,7 +55,7 @@ export const WebSongSearchModal: React.FC<WebSongSearchModalProps> = ({
     setSelectedSong(null);
   }, [visible]);
 
-  // The window listener below outlives renders; it calls the latest confirm handler so an edited Singer Name is sent
+  // The window listener below outlives renders; it calls the latest confirm handler
   const confirmAddRef = useRef<() => void>(() => {});
 
   // Keyboard shortcut: Enter to confirm add, Escape to cancel selection
@@ -119,7 +118,6 @@ export const WebSongSearchModal: React.FC<WebSongSearchModalProps> = ({
       setSelectedSong(null);
     } else {
       setSelectedSong(song);
-      setSingerName(nickname?.trim() || 'Host');
       setErrorMessage(null);
     }
   };
@@ -129,7 +127,8 @@ export const WebSongSearchModal: React.FC<WebSongSearchModalProps> = ({
     setSubmitting(true);
     setErrorMessage(null);
 
-    const singer = singerName.trim() || nickname?.trim() || 'Host';
+    const singer =
+      nickname?.trim() || (useAuthStore.getState().role === 'guest' ? 'Singer' : 'Host');
 
     try {
       const res = await queueApi.addToQueue(roomCode, {
@@ -395,21 +394,6 @@ export const WebSongSearchModal: React.FC<WebSongSearchModalProps> = ({
                   <span className="font-mono text-[11px] text-slate-500">{selectedSong.durationFormatted}</span>
                 </div>
               </div>
-            </div>
-
-            {/* Singer Name (defaults to the member's nickname) */}
-            <div className="w-full sm:w-44 shrink-0">
-              <label htmlFor="singer-name-input" className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                Singer Name
-              </label>
-              <input
-                id="singer-name-input"
-                type="text"
-                value={singerName}
-                onChange={(e) => setSingerName(e.target.value)}
-                maxLength={50}
-                className="w-full bg-[#1C1F30] border border-white/10 focus:border-[#8B5CF6] rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-[#8B5CF6]"
-              />
             </div>
 
             {/* Action Buttons */}

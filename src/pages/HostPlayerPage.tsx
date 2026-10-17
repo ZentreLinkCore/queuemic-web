@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { Power, Copy, Check, X, Music, Tv } from 'lucide-react';
 import { useRoomStore } from '../store/useRoomStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { useQueueStore } from '../store/useQueueStore';
 import { usePlaybackStore, getLivePlaybackPosition } from '../store/usePlaybackStore';
 import { useEchoRoom } from '../hooks/useEchoRoom';
@@ -22,6 +23,8 @@ import { WebConnectionBanner } from '../components/common/WebConnectionBanner';
 import { WebToast } from '../components/common/WebToast';
 
 const HEARTBEAT_INTERVAL_MS = 30000;
+// Back from a hidden tab, report once the player has caught up and delivered a fresh position
+const VISIBLE_REPORT_DELAY_MS = 1000;
 
 const useIsMobile = () => {
   const [isMobile, setIsMobile] = useState(() => {
@@ -42,7 +45,23 @@ const useIsMobile = () => {
 
 export const HostPlayerPage: React.FC = () => {
   const { roomCode } = useParams<{ roomCode: string }>();
+  const memberId = useAuthStore((s) => s.memberId);
+  const role = useAuthStore((s) => s.role);
+  const currentRoom = useRoomStore((s) => s.currentRoom);
+
   if (!roomCode) return <Navigate to="/" replace />;
+
+  const isOfficialHost = Boolean(
+    memberId &&
+    role === 'host' &&
+    currentRoom &&
+    currentRoom.code?.toUpperCase() === roomCode.toUpperCase()
+  );
+
+  if (!isOfficialHost) {
+    return <Navigate to="/" replace />;
+  }
+
   return <HostPlayerRoom roomCode={roomCode} />;
 };
 
@@ -108,7 +127,18 @@ const HostPlayerRoom: React.FC<{ roomCode: string }> = ({ roomCode }) => {
       lastSentAt = Date.now();
       playbackApi.updatePlaybackState(roomCode, 'playing', getLivePlaybackPosition(), queueItemId).catch(() => {});
     }, 500);
-    return () => clearInterval(interval);
+
+    // The video can stall or be paused while the tab is hidden: re-anchor guests on where it really is, not up to 30s later
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        lastSentAt = Math.min(lastSentAt, Date.now() - HEARTBEAT_INTERVAL_MS + VISIBLE_REPORT_DELAY_MS);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [roomCode, currentPlaying?.id, playbackState]);
 
 
@@ -402,7 +432,7 @@ const HostPlayerRoom: React.FC<{ roomCode: string }> = ({ roomCode }) => {
               className={
                 isFullscreen
                   ? 'w-full h-full'
-                  : 'w-full h-full flex flex-col bg-black rounded-2xl overflow-hidden border border-white/[0.08]'
+                  : 'w-full h-full flex flex-col bg-black rounded-2xl overflow-hidden border border-white/[0.08] shadow-[0_0_60px_-15px_rgba(139,92,246,0.25)]'
               }
             >
               <div className="flex-1 min-h-0 w-full relative overflow-hidden bg-black">

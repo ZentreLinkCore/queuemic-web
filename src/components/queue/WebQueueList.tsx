@@ -39,6 +39,7 @@ export const WebQueueList: React.FC<WebQueueListProps> = ({
 }) => {
   const isScrollable = className.includes('h-full') || className.includes('flex-1') || className.includes('h-');
   const [draggingId, setDraggingId] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const canDrag = canReorder && Boolean(onReorder);
 
   const handleDrop = (targetIndex: number) => {
@@ -47,6 +48,7 @@ export const WebQueueList: React.FC<WebQueueListProps> = ({
       if (fromIndex !== -1 && fromIndex !== targetIndex) onReorder(draggingId, targetIndex + 1);
     }
     setDraggingId(null);
+    setDragOverIndex(null);
   };
 
   const handleRemove = (item: KaraokeQueueItem) => {
@@ -115,16 +117,25 @@ export const WebQueueList: React.FC<WebQueueListProps> = ({
             const isMySong = memberId && item.requestedByMemberId === memberId;
             const canRemove = isHost || isMySong;
 
+            const isDropTarget = canDrag && dragOverIndex === index && draggingId !== item.id;
+
             return (
               <div
                 key={item.id}
                 data-testid={`queue-row-${item.id}`}
                 draggable={canDrag}
                 onDragStart={canDrag ? () => setDraggingId(item.id) : undefined}
-                onDragOver={canDrag ? (e) => e.preventDefault() : undefined}
-                onDrop={canDrag ? (e) => { e.preventDefault(); handleDrop(index); } : undefined}
-                onDragEnd={canDrag ? () => setDraggingId(null) : undefined}
-                className={draggingId === item.id ? 'opacity-50' : undefined}
+                onDragOver={canDrag ? (e) => { e.preventDefault(); setDragOverIndex(index); } : undefined}
+                onDragLeave={canDrag ? () => setDragOverIndex(null) : undefined}
+                onDrop={canDrag ? (e) => { e.preventDefault(); setDragOverIndex(null); handleDrop(index); } : undefined}
+                onDragEnd={canDrag ? () => { setDraggingId(null); setDragOverIndex(null); } : undefined}
+                className={`rounded-2xl transition-all ${
+                  draggingId === item.id
+                    ? 'opacity-50'
+                    : isDropTarget
+                    ? 'border-t-2 border-[#06B6D4] shadow-[0_-2px_12px_rgba(6,182,212,0.4)]'
+                    : ''
+                }`}
               >
                 <WebQueueItemCard
                   item={item}

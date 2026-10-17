@@ -97,6 +97,10 @@ describe('room page queue and play/pause actions', () => {
     ['host', '/host/ABC123'],
     ['guest', '/room/ABC123'],
   ])('%s page', (_role, path) => {
+    beforeEach(() => {
+      useAuthStore.setState({ role: _role as any });
+    });
+
     it('moves an item optimistically and sends the direction', async () => {
       renderAt(path);
       fireEvent.click((await screen.findAllByTitle('Move up'))[0]);

@@ -11,6 +11,8 @@ const RESYNC_COOLDOWN_MS = 3000;
 const MAX_SEEK_LEAD_SECONDS = 3;
 // YT.PlayerState.PAUSED, for checks that run before the API object is at hand
 const YT_PAUSED = 2;
+// After a hidden tab is shown again, give the iframe this long to report its real position before resyncing on it
+const VISIBLE_SETTLE_MS = 1000;
 
 type PlayerEvent =
   | { type: 'ready' | 'playing' | 'paused' | 'ended' | 'buffering' }
@@ -329,6 +331,8 @@ export const WebVideoPlayer: React.FC<WebVideoPlayerProps> = ({
   // Sync to room position when drift exceeds tolerance
   const resyncToRoom = (actualSeconds: number) => {
     if (!anchorForSong || anchorForSong.state !== 'playing' || !isPlaying || isBufferingRef.current) return;
+    // A hidden tab throttles the iframe's time reports (YouTube extrapolates them by 1s at most), so readings run late
+    if (document.visibilityState === 'hidden') return;
     const expected = getExpectedPosition(anchorForSong);
     if (durationSeconds > 0 && expected >= durationSeconds) return;
     if (Date.now() - lastResyncAtRef.current < RESYNC_COOLDOWN_MS) return;
@@ -531,18 +535,24 @@ export const WebVideoPlayer: React.FC<WebVideoPlayerProps> = ({
     if (followHost) alignPausedToRoom();
   }, [syncAnchor]);
 
-  // A hidden tab can let the browser pause a guest's video; once visible again, rejoin a room that is still playing
+  // A hidden tab can let the browser pause the video (the host's too, which nothing else would resume); once visible
+  // again, rejoin a room that is still playing, and let a guest resync from fresh readings as soon as they arrive
   useEffect(() => {
-    if (!followHost) return;
     const handleVisibilityChange = () => {
-      if (document.visibilityState !== 'visible' || !isPlayingRef.current) return;
+      if (document.visibilityState !== 'visible') return;
+      if (followHostRef.current) {
+        // The first reading back includes the time spent hidden, not a seek's buffering: don't learn a lead from it
+        awaitingSeekResultRef.current = false;
+        lastResyncAtRef.current = Date.now() - RESYNC_COOLDOWN_MS + VISIBLE_SETTLE_MS;
+      }
+      if (!isPlayingRef.current) return;
       try {
         if (playerRef.current?.getPlayerState?.() === YT_PAUSED) playerRef.current.playVideo();
       } catch (e) {}
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [followHost]);
+  }, []);
 
   // Handle external seek target
   useEffect(() => {

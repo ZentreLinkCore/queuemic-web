@@ -35,7 +35,7 @@ export const NeonButton: React.FC<NeonButtonProps> = ({
     outline:
       'border border-white/15 hover:border-white/30 text-[#F8FAFC] bg-white/[0.04] hover:bg-white/[0.08] active:scale-[0.98]',
     danger:
-      'bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 active:scale-[0.98]',
+      'bg-[#F43F5E] hover:bg-[#E11D48] text-white font-bold shadow-md shadow-[#F43F5E]/20 active:scale-[0.98]',
     ghost:
       'text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-white/[0.06] active:scale-[0.98]',
   }[variant];

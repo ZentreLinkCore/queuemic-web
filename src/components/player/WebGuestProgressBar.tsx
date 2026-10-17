@@ -3,6 +3,7 @@ import { Play, Pause, SkipForward, Radio } from 'lucide-react';
 import type { KaraokeQueueItem, PlaybackState, PlaybackSyncAnchor } from '../../types';
 import { formatDuration } from '../../utils/formatting';
 import { GlassCard } from '../common/GlassCard';
+import { WebSongDetailsModal } from './WebSongDetailsModal';
 
 export interface WebGuestProgressBarProps {
   currentSong: KaraokeQueueItem | null;
@@ -25,6 +26,7 @@ export const WebGuestProgressBar: React.FC<WebGuestProgressBarProps> = ({
   onPlayPause,
   onSkip,
 }) => {
+  const [isDetailsVisible, setIsDetailsVisible] = useState(false);
   const [livePosition, setLivePosition] = useState<number>(0);
   const isPlaying = playbackState === 'playing';
 
@@ -87,10 +89,15 @@ export const WebGuestProgressBar: React.FC<WebGuestProgressBarProps> = ({
     <GlassCard variant="surface" glow="primary" className="p-4 sm:p-5 w-full">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <span className="relative flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-          </span>
+          {isPlaying ? (
+            <div className="flex items-end gap-0.5 h-3.5 w-3 shrink-0 pb-0.5" aria-hidden="true">
+              <span className="w-0.5 bg-emerald-400 rounded-full animate-equalizer-1 shadow-[0_0_4px_#34D399]" />
+              <span className="w-0.5 bg-emerald-400 rounded-full animate-equalizer-2 shadow-[0_0_4px_#34D399]" />
+              <span className="w-0.5 bg-emerald-400 rounded-full animate-equalizer-3 shadow-[0_0_4px_#34D399]" />
+            </div>
+          ) : (
+            <span className="w-2.5 h-2.5 rounded-full bg-slate-500 shrink-0" />
+          )}
           <span className="text-xs font-bold text-emerald-400 tracking-wider uppercase font-['Outfit'] flex items-center gap-1.5">
             <Radio className="w-3.5 h-3.5" /> LIVE TV SYNC
           </span>
@@ -101,13 +108,17 @@ export const WebGuestProgressBar: React.FC<WebGuestProgressBarProps> = ({
         </span>
       </div>
 
-      {/* Song details */}
-      <div className="flex items-center gap-3.5 mb-4">
+      {/* Song details (Clickable to view full details) */}
+      <div
+        onClick={() => setIsDetailsVisible(true)}
+        className="flex items-center gap-3.5 mb-4 cursor-pointer group"
+        title="Click to view song details"
+      >
         {song?.thumbnailUrl ? (
           <img
             src={song.thumbnailUrl}
             alt={song.title}
-            className="w-14 h-14 rounded-xl object-cover border border-white/10 shrink-0"
+            className="w-14 h-14 rounded-xl object-cover border border-white/10 shrink-0 group-hover:scale-105 transition-transform"
           />
         ) : (
           <div className="w-14 h-14 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
@@ -116,7 +127,9 @@ export const WebGuestProgressBar: React.FC<WebGuestProgressBarProps> = ({
         )}
 
         <div className="min-w-0 flex-1">
-          <h3 className="text-base font-bold text-white truncate font-['Outfit']">{song?.title || 'Unknown Title'}</h3>
+          <h3 className="text-base font-bold text-white truncate font-['Outfit'] group-hover:text-[#06B6D4] transition-colors">
+            {song?.title || 'Unknown Title'}
+          </h3>
           <p className="text-xs text-slate-400 truncate">{song?.artist || 'YouTube'}</p>
         </div>
       </div>
@@ -165,6 +178,15 @@ export const WebGuestProgressBar: React.FC<WebGuestProgressBarProps> = ({
           )}
         </div>
       )}
+
+      {/* Song Details Modal */}
+      <WebSongDetailsModal
+        visible={isDetailsVisible}
+        songItem={currentSong}
+        onClose={() => setIsDetailsVisible(false)}
+        badgeLabel={isPlaying ? 'NOW PLAYING 🔴' : 'PAUSED ⏸'}
+        badgeColor={isPlaying ? 'success' : 'accent'}
+      />
     </GlassCard>
   );
 };

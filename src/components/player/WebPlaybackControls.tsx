@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Play, Pause, SkipForward, Maximize2, Minimize2 } from 'lucide-react';
 import type { KaraokeQueueItem, PlaybackState } from '../../types';
 import { formatDuration } from '../../utils/formatting';
+import { WebSongDetailsModal } from './WebSongDetailsModal';
 
 export interface WebPlaybackControlsProps {
   currentSong?: KaraokeQueueItem | null;
@@ -32,6 +33,7 @@ export const WebPlaybackControls: React.FC<WebPlaybackControlsProps> = ({
   isHost = true,
   showOutsideControls,
 }) => {
+  const [isDetailsVisible, setIsDetailsVisible] = useState(false);
   const isPlaying = Boolean(currentSong && playbackState === 'playing');
   const isBuffering = Boolean(currentSong && playbackState === 'buffering');
   const effectiveDuration =
@@ -62,15 +64,19 @@ export const WebPlaybackControls: React.FC<WebPlaybackControlsProps> = ({
       {/* Top Header: Live Status Indicator & On Stage Singer */}
       <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-1.5">
-          <span
-            className={`w-2 h-2 rounded-full shrink-0 ${
-              isPlaying
-                ? 'bg-[#10B981] shadow-[0_0_8px_#10B981] animate-pulse'
-                : isBuffering
-                ? 'bg-[#F59E0B]'
-                : 'bg-[#F43F5E]'
-            }`}
-          />
+          {isPlaying ? (
+            <div className="flex items-end gap-0.5 h-3 w-3 shrink-0 pb-0.5" aria-hidden="true">
+              <span className="w-0.5 bg-[#10B981] rounded-full animate-equalizer-1 shadow-[0_0_4px_#10B981]" />
+              <span className="w-0.5 bg-[#10B981] rounded-full animate-equalizer-2 shadow-[0_0_4px_#10B981]" />
+              <span className="w-0.5 bg-[#10B981] rounded-full animate-equalizer-3 shadow-[0_0_4px_#10B981]" />
+            </div>
+          ) : (
+            <span
+              className={`w-2 h-2 rounded-full shrink-0 ${
+                isBuffering ? 'bg-[#F59E0B]' : 'bg-[#F43F5E]'
+              }`}
+            />
+          )}
           <span className="text-[#94A3B8] font-black tracking-[0.8px] text-[10px] uppercase">
             {isPlaying
               ? isHost
@@ -92,23 +98,38 @@ export const WebPlaybackControls: React.FC<WebPlaybackControlsProps> = ({
             </span>
           </div>
         ) : (
-          <span className="text-[11px] text-[#64748B] font-semibold">QueueMic Live</span>
+          <span className="text-[11px] text-[#94A3B8] font-semibold">QueueMic Live</span>
         )}
       </div>
 
-      {/* Song Title & Artist Meta */}
-      <div className={`min-h-[20px] flex items-center ${shouldShowControlsBar ? 'mb-2.5' : ''}`}>
+      {/* Song Title & Artist Meta (Clickable to view full details) */}
+      <div
+        onClick={() => currentSong && setIsDetailsVisible(true)}
+        className={`min-h-[20px] flex items-center ${
+          shouldShowControlsBar ? 'mb-2.5' : ''
+        } ${currentSong ? 'cursor-pointer group' : ''}`}
+        title={currentSong ? 'Click to view song details' : undefined}
+      >
         {songTitle ? (
           <div className="min-w-0 flex-1 flex items-baseline justify-between gap-2">
-            <h4 className="text-[15px] font-extrabold text-[#F8FAFC] truncate uppercase tracking-wide">
+            <h4 className="text-[15px] font-extrabold text-[#F8FAFC] truncate uppercase tracking-wide group-hover:text-[#06B6D4] transition-colors">
               {songTitle}
             </h4>
             {songArtist && <p className="text-xs text-[#94A3B8] font-semibold truncate shrink-0">{songArtist}</p>}
           </div>
         ) : (
-          <p className="text-xs text-[#64748B]">Waiting for the next song to start...</p>
+          <p className="text-xs text-[#94A3B8]">Waiting for the next song to start...</p>
         )}
       </div>
+
+      {/* Song Details Modal */}
+      <WebSongDetailsModal
+        visible={isDetailsVisible}
+        songItem={currentSong || null}
+        onClose={() => setIsDetailsVisible(false)}
+        badgeLabel={isPlaying ? 'NOW PLAYING 🔴' : 'PAUSED ⏸'}
+        badgeColor={isPlaying ? 'success' : 'accent'}
+      />
 
       {/* Controls & Scrubber: Only shown when shouldShowControlsBar is true */}
       {shouldShowControlsBar && (

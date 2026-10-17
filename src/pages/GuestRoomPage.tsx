@@ -39,7 +39,22 @@ const useIsMobile = () => {
 
 export const GuestRoomPage: React.FC = () => {
   const { roomCode } = useParams<{ roomCode: string }>();
+  const memberId = useAuthStore((s) => s.memberId);
+  const currentRoom = useRoomStore((s) => s.currentRoom);
+
   if (!roomCode) return <Navigate to="/" replace />;
+
+  // Official member validation: Must have joined via entering code or scanning QR
+  const isOfficialMember = Boolean(
+    memberId &&
+    currentRoom &&
+    currentRoom.code?.toUpperCase() === roomCode.toUpperCase()
+  );
+
+  if (!isOfficialMember) {
+    return <Navigate to="/" replace />;
+  }
+
   return <GuestRoom roomCode={roomCode} />;
 };
 
@@ -81,6 +96,25 @@ const GuestRoom: React.FC<{ roomCode: string }> = ({ roomCode }) => {
       });
     }
   }, [roomCode, currentRoom?.name, setLastRoom]);
+
+  // Validate active room status with backend API
+  useEffect(() => {
+    if (!roomCode) return;
+    roomApi
+      .getRoomDetails(roomCode)
+      .then((res) => {
+        if (res?.data?.status && res.data.status !== 'active') {
+          leaveRoom();
+          navigate('/', { replace: true });
+        }
+      })
+      .catch((err) => {
+        if (err?.status === 404 || err?.status === 403 || err?.code === 'ROOM_NOT_FOUND') {
+          leaveRoom();
+          navigate('/', { replace: true });
+        }
+      });
+  }, [roomCode, leaveRoom, navigate]);
 
   // Set duration immediately when current track is loaded
   useEffect(() => {
@@ -454,7 +488,7 @@ const GuestRoom: React.FC<{ roomCode: string }> = ({ roomCode }) => {
               <div
                 className={
                   viewMode === 'video'
-                    ? 'w-full h-full flex flex-col bg-black rounded-2xl overflow-hidden border border-white/[0.08]'
+                    ? 'w-full h-full flex flex-col bg-black rounded-2xl overflow-hidden border border-white/[0.08] shadow-[0_0_60px_-15px_rgba(6,182,212,0.2)]'
                     : 'hidden'
                 }
               >

@@ -146,6 +146,8 @@ class FakeYouTubePlayer {
   state = -1;
   // How far behind its target a seek lands, as if the browser buffered for that long
   seekLandingLag = 0;
+  // How far behind the video its reported time runs, as in a hidden tab whose iframe updates are throttled
+  readingLag = 0;
   private position: number;
   private playingSince = 0;
   private events: any;
@@ -167,6 +169,9 @@ class FakeYouTubePlayer {
   }
 
   getCurrentTime() {
+    return this.actualTime() - this.readingLag;
+  }
+  private actualTime() {
     return this.state === YT_STATE.PLAYING ? this.position + (Date.now() - this.playingSince) / 1000 : this.position;
   }
   getDuration() {
@@ -179,7 +184,7 @@ class FakeYouTubePlayer {
     this.events.onReady({ target: this });
   }
   setPlayerState(state: number) {
-    this.position = this.getCurrentTime();
+    this.position = this.actualTime();
     this.playingSince = Date.now();
     this.state = state;
     this.events.onStateChange({ data: state });
@@ -479,6 +484,54 @@ describe('WebVideoPlayer guest returning to a hidden tab (EC-07)', () => {
     hideThenShow(player);
 
     expect(player.playVideo).not.toHaveBeenCalled();
+  });
+
+  it("resumes the host's own video too, which the room still shows as playing", async () => {
+    render(<WebVideoPlayer currentSong={syncSong} playbackState="playing" />);
+    await act(async () => {});
+    const player = FakeYouTubePlayer.instances[0];
+    act(() => player.ready());
+    act(() => player.setPlayerState(YT_STATE.PLAYING));
+    hideThenShow(player);
+
+    expect(player.playVideo).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores the late readings of a hidden tab, then catches up with the room a second after it is shown', async () => {
+    const startedAt = Date.now();
+    const player = await renderGuest('playing');
+    const advance = (ms: number) => act(() => vi.advanceTimersByTime(ms));
+
+    // A resync just before the tab is hidden, whose result is still to be measured
+    player.readingLag = 2;
+    advance(250);
+    expect(player.seekTo).toHaveBeenCalledTimes(1);
+    player.readingLag = 0;
+
+    // Hidden: the iframe's reports run 20s late, and the video really stalls for 5s
+    visibility = 'hidden';
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    player.readingLag = 20;
+    advance(5000);
+    act(() => player.setPlayerState(YT_STATE.BUFFERING));
+    advance(5000);
+    act(() => player.setPlayerState(YT_STATE.PLAYING));
+    expect(player.seekTo).toHaveBeenCalledTimes(1);
+
+    player.readingLag = 0;
+    visibility = 'visible';
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    const shownAt = Date.now();
+    advance(1250);
+
+    // One seek to where the room is, led by the usual 0.3s rather than a lead learned from the hidden stall
+    expect(player.seekTo).toHaveBeenCalledTimes(2);
+    const roomAtSeek = 10 + (shownAt + 1000 - startedAt) / 1000;
+    expect(player.seekTo.mock.calls[1][0]).toBeCloseTo(roomAtSeek + 0.3, 1);
   });
 });
 

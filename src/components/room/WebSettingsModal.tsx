@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, X, QrCode, Users, Copy, Check, Sliders, ShieldAlert, Sparkles, ChevronRight, Zap } from 'lucide-react';
+import { Settings, X, QrCode, Users, Copy, Check, Sliders, Sparkles, ChevronRight, Zap } from 'lucide-react';
 import { GlassCard } from '../common/GlassCard';
 import { NeonButton } from '../common/NeonButton';
 import { useRoomStore } from '../../store/useRoomStore';
@@ -322,26 +322,26 @@ export const WebSettingsModal: React.FC<WebSettingsModalProps> = ({
             </div>
           </GlassCard>
 
-          {/* Danger Zone */}
+          {/* Danger Zone matching mobapp */}
           {onCloseRoom && (
-            <GlassCard variant="surface" className="p-4 border-red-500/20 bg-red-950/20">
-              <h4 className="text-xs font-bold text-red-400 uppercase tracking-wider flex items-center gap-1.5 mb-1">
-                <ShieldAlert className="w-3.5 h-3.5 text-red-400" /> Danger Zone
-              </h4>
-              <p className="text-[11px] text-slate-400 mb-3">
+            <GlassCard variant="elevated" glow="danger" className="p-4 sm:p-5 border-[1.5px]">
+              <h3 className="text-base sm:text-lg font-bold text-[#FB7185] font-['Outfit'] mb-1">
+                Danger Zone
+              </h3>
+              <p className="text-xs text-[#94A3B8] mb-4 leading-relaxed">
                 Ending the room immediately stops TV playback and disconnects all connected phones.
               </p>
               <NeonButton
                 type="button"
                 variant="danger"
-                size="sm"
+                size="md"
                 onClick={() => {
                   onClose();
                   onCloseRoom();
                 }}
-                className="w-full py-2 font-bold"
+                className="w-full py-2.5 font-bold"
               >
-                End & Close Room 🛑
+                End & Close Room
               </NeonButton>
             </GlassCard>
           )}
