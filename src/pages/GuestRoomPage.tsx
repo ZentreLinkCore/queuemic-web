@@ -255,8 +255,8 @@ export const GuestRoomPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Center View Switcher & Room Code */}
-        <div className="flex items-center gap-2">
+        {/* Center View Switcher & Room Code (Shown on desktop/tablet md+) */}
+        <div className="hidden md:flex items-center gap-2">
           <div className="flex items-center bg-white/[0.04] p-0.5 sm:p-1 rounded-xl border border-white/10">
             <button
               onClick={() => setViewMode('video')}
@@ -268,7 +268,7 @@ export const GuestRoomPage: React.FC = () => {
               title="Video View"
             >
               <Tv className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Video</span>
+              <span>Video</span>
             </button>
             <button
               onClick={() => setViewMode('progress')}
@@ -280,13 +280,13 @@ export const GuestRoomPage: React.FC = () => {
               title="Progress View"
             >
               <Activity className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Progress</span>
+              <span>Progress</span>
             </button>
           </div>
 
           <button
             onClick={handleCopyCode}
-            className="hidden md:flex px-3 py-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs font-mono font-bold tracking-widest text-slate-200 items-center gap-2 cursor-pointer transition-all"
+            className="flex px-3 py-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs font-mono font-bold tracking-widest text-slate-200 items-center gap-2 cursor-pointer transition-all"
             title="Click to copy room code"
           >
             <span>{roomCode.toUpperCase()}</span>
@@ -298,7 +298,7 @@ export const GuestRoomPage: React.FC = () => {
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <button
             onClick={() => setIsQrModalVisible(true)}
-            className="h-[38px] px-3.5 rounded-xl bg-[#242738] border-[1.5px] border-[#06B6D4] text-[#06B6D4] text-xs font-black flex items-center gap-1 active:scale-95 transition-all cursor-pointer"
+            className="h-[38px] px-3 sm:px-3.5 rounded-xl bg-[#242738] border-[1.5px] border-[#06B6D4] text-[#06B6D4] text-xs font-black flex items-center gap-1 active:scale-95 transition-all cursor-pointer"
             title="Show QR Code"
           >
             <span>📱</span>
@@ -307,7 +307,7 @@ export const GuestRoomPage: React.FC = () => {
 
           <button
             onClick={() => setIsMemberListVisible(true)}
-            className="h-[38px] px-3.5 rounded-xl bg-[#242738] border border-[#8B5CF6]/50 text-[#A78BFA] text-xs font-extrabold flex items-center gap-1 active:scale-95 transition-all cursor-pointer"
+            className="h-[38px] px-3 sm:px-3.5 rounded-xl bg-[#242738] border border-[#8B5CF6]/50 text-[#A78BFA] text-xs font-extrabold flex items-center gap-1 active:scale-95 transition-all cursor-pointer"
             title="Connected Members"
           >
             <span>👥</span>
@@ -316,7 +316,7 @@ export const GuestRoomPage: React.FC = () => {
 
           <button
             onClick={handleLeaveRoom}
-            className="h-[38px] px-3.5 rounded-xl bg-[#242738] border border-red-500/40 text-red-400 text-xs font-extrabold flex items-center gap-1 active:scale-95 transition-all cursor-pointer ml-0.5"
+            className="h-[38px] px-3 sm:px-3.5 rounded-xl bg-[#242738] border border-red-500/40 text-red-400 text-xs font-extrabold flex items-center gap-1 active:scale-95 transition-all cursor-pointer ml-0.5"
             title="Leave Room"
           >
             <span>🚪</span>
@@ -328,6 +328,36 @@ export const GuestRoomPage: React.FC = () => {
       {/* Mobile View (< lg): Fixed Edge-to-Edge Video/Progress at top, scrollable Queue below (No card wrapper) */}
       {isMobile && !isFullscreen ? (
         <div className="flex-1 flex flex-col min-h-0 w-full overflow-hidden">
+          {/* Mobile View Switcher Tab Bar (Dedicated, prominent, uncrowded) */}
+          <div className="flex md:hidden items-center justify-center px-4 py-2 bg-[#12131C] border-b border-white/[0.08] shrink-0">
+            <div className="grid grid-cols-2 w-full max-w-xs p-1 bg-white/[0.04] rounded-xl border border-white/10">
+              <button
+                type="button"
+                onClick={() => setViewMode('video')}
+                className={`py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  viewMode === 'video'
+                    ? 'bg-[#06B6D4] text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Tv className="w-3.5 h-3.5" />
+                <span>Video Stage</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('progress')}
+                className={`py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  viewMode === 'progress'
+                    ? 'bg-[#06B6D4] text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Activity className="w-3.5 h-3.5" />
+                <span>Live Progress</span>
+              </button>
+            </div>
+          </div>
+
           {/* Edge-to-Edge Video Player & Outside Controls (PINNED - kept mounted so YouTube iframe never reloads on tab switch) */}
           <div className={viewMode === 'video' ? 'shrink-0 flex flex-col' : 'hidden'}>
             <div className="w-full aspect-video bg-black relative overflow-hidden">
@@ -372,7 +402,7 @@ export const GuestRoomPage: React.FC = () => {
                 durationSeconds={durationSeconds}
                 canControlPlayback={canControlPlayback}
                 isHost={false}
-                showOutsideControls={canControlPlayback}
+                showOutsideControls={true}
               />
             </div>
           </div>
@@ -386,8 +416,8 @@ export const GuestRoomPage: React.FC = () => {
               currentTimeSeconds={currentTimeSeconds}
               durationSeconds={durationSeconds}
               canControlPlayback={canControlPlayback}
-              onPlayPause={handlePlayPause}
-              onSkip={handleSkip}
+              onPlayPause={canControlPlayback ? handlePlayPause : undefined}
+              onSkip={canControlPlayback ? handleSkip : undefined}
             />
           </div>
 

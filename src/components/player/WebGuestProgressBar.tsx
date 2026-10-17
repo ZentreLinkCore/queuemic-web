@@ -84,15 +84,15 @@ export const WebGuestProgressBar: React.FC<WebGuestProgressBarProps> = ({
   const progressPercent = durationSeconds > 0 ? (livePosition / durationSeconds) * 100 : 0;
 
   return (
-    <GlassCard variant="surface" glow="primary" className="p-5 w-full">
+    <GlassCard variant="surface" glow="primary" className="p-4 sm:p-5 w-full">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className="relative flex h-2.5 w-2.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
           </span>
-          <span className="text-xs font-bold text-emerald-400 tracking-wider uppercase font-['Outfit'] flex items-center gap-1">
-            <Radio className="w-3.5 h-3.5" /> Now on Stage
+          <span className="text-xs font-bold text-emerald-400 tracking-wider uppercase font-['Outfit'] flex items-center gap-1.5">
+            <Radio className="w-3.5 h-3.5" /> LIVE TV SYNC
           </span>
         </div>
 
