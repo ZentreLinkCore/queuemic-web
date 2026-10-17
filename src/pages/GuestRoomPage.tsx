@@ -40,6 +40,7 @@ const useIsMobile = () => {
 export const GuestRoomPage: React.FC = () => {
   const { roomCode } = useParams<{ roomCode: string }>();
   const memberId = useAuthStore((s) => s.memberId);
+  const role = useAuthStore((s) => s.role);
   const currentRoom = useRoomStore((s) => s.currentRoom);
 
   if (!roomCode) return <Navigate to="/" replace />;
@@ -53,6 +54,11 @@ export const GuestRoomPage: React.FC = () => {
 
   if (!isOfficialMember) {
     return <Navigate to="/" replace />;
+  }
+
+  // If role is host (e.g. guest became host via transfer), transition to host player view
+  if (role === 'host') {
+    return <Navigate to={`/host/${roomCode}`} replace />;
   }
 
   return <GuestRoom roomCode={roomCode} />;

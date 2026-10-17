@@ -51,15 +51,19 @@ export const HostPlayerPage: React.FC = () => {
 
   if (!roomCode) return <Navigate to="/" replace />;
 
-  const isOfficialHost = Boolean(
+  const isOfficialMember = Boolean(
     memberId &&
-    role === 'host' &&
     currentRoom &&
     currentRoom.code?.toUpperCase() === roomCode.toUpperCase()
   );
 
-  if (!isOfficialHost) {
+  if (!isOfficialMember) {
     return <Navigate to="/" replace />;
+  }
+
+  // If role is guest (e.g. host transferred to another member), transition to guest room instead of kicking out to home
+  if (role === 'guest') {
+    return <Navigate to={`/room/${roomCode}`} replace />;
   }
 
   return <HostPlayerRoom roomCode={roomCode} />;
@@ -187,6 +191,9 @@ const HostPlayerRoom: React.FC<{ roomCode: string }> = ({ roomCode }) => {
     try {
       await roomApi.transferHost(roomCode, targetMember.id);
       setIsMemberListVisible(false);
+      // Immediately demote own local role and transition to guest room
+      useAuthStore.getState().setRole('guest');
+      navigate(`/room/${roomCode}`, { replace: true });
     } catch (err) {
       console.warn('Transfer host error:', err);
     }
