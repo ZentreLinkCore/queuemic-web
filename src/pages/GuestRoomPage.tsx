@@ -238,9 +238,9 @@ export const GuestRoomPage: React.FC = () => {
     <div className="min-h-screen h-[100dvh] w-screen bg-[#0D0E15] text-white flex flex-col overflow-hidden select-none">
       {/* Top Bar */}
       <header className="h-14 px-3 sm:px-6 bg-[#12131C]/90 backdrop-blur-md border-b border-white/[0.08] flex items-center justify-between shrink-0 z-30 transition-all">
-        <div className="flex items-center gap-2.5 min-w-0">
-          {/* TV Icon Box: Shown in Web View (desktop), hidden on mobile */}
-          <div className="hidden lg:flex w-9 h-9 rounded-xl bg-[#06B6D4]/15 border border-[#06B6D4]/30 items-center justify-center shrink-0 shadow-sm">
+        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+          {/* TV Icon Box: Shown on both Mobile and Web View */}
+          <div className="flex w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#06B6D4]/15 border border-[#06B6D4]/30 items-center justify-center shrink-0 shadow-sm">
             <Tv className="w-4 h-4 text-[#06B6D4]" />
           </div>
           <div className="min-w-0">

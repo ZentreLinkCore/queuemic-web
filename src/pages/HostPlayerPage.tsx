@@ -261,9 +261,9 @@ export const HostPlayerPage: React.FC = () => {
           isFullscreen ? 'hidden' : ''
         }`}
       >
-        <div className="flex items-center gap-2.5 min-w-0">
-          {/* TV Icon Box: Shown in Web View (desktop), hidden on mobile */}
-          <div className="hidden lg:flex w-9 h-9 rounded-xl bg-[#8B5CF6]/15 border border-[#8B5CF6]/30 items-center justify-center shrink-0 shadow-sm">
+        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+          {/* TV Icon Box: Shown on both Mobile and Web View */}
+          <div className="flex w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#8B5CF6]/15 border border-[#8B5CF6]/30 items-center justify-center shrink-0 shadow-sm">
             <Tv className="w-4 h-4 text-[#A78BFA]" />
           </div>
           <div className="min-w-0">

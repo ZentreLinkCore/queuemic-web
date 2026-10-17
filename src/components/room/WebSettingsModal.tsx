@@ -346,17 +346,6 @@ export const WebSettingsModal: React.FC<WebSettingsModalProps> = ({
             </GlassCard>
           )}
         </div>
-
-        {/* Footer */}
-        <div className="pt-3 border-t border-white/10">
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-semibold text-xs transition-colors cursor-pointer"
-          >
-            Done
-          </button>
-        </div>
       </GlassCard>
     </div>
   );
