@@ -11,9 +11,12 @@ const RESYNC_COOLDOWN_MS = 3000;
 const MAX_SEEK_LEAD_SECONDS = 3;
 // YT.PlayerState.PAUSED, for checks that run before the API object is at hand
 const YT_PAUSED = 2;
+// After a hidden tab is shown again, give the iframe this long to report its real position before resyncing on it
+const VISIBLE_SETTLE_MS = 1000;
 
 type PlayerEvent =
   | { type: 'ready' | 'playing' | 'paused' | 'ended' | 'buffering' }
+  | { type: 'error'; code: number }
   | { type: 'timeupdate'; currentTime: number; duration: number };
 
 let youTubeApiPromise: Promise<any> | null = null;
@@ -91,6 +94,8 @@ export const WebVideoPlayer: React.FC<WebVideoPlayerProps> = ({
   const [videoPhase, setVideoPhase] = useState<'loading' | 'playing' | 'paused' | 'ended'>('loading');
   const [webNeedsTap, setWebNeedsTap] = useState(false);
   const [webAutoMuted, setWebAutoMuted] = useState(false);
+  // YouTube error code for a video that cannot play here (2 bad id, 5 HTML5, 100 removed, 101/150 embedding blocked)
+  const [videoError, setVideoError] = useState<number | null>(null);
   const [showControls, setShowControls] = useState(false);
   const [showQrOverlay, setShowQrOverlay] = useState(false);
   const [isMobile, setIsMobile] = useState(() => {
@@ -125,6 +130,9 @@ export const WebVideoPlayer: React.FC<WebVideoPlayerProps> = ({
   isPlayingRef.current = isPlaying;
   const followHostRef = useRef(followHost);
   followHostRef.current = followHost;
+  // Read when a player is ready, so a new song starts with this viewer's current mute choice
+  const mutedRef = useRef(muted);
+  mutedRef.current = muted;
 
   // Internal reactive playback time and duration for zero-lag smooth progress tracking
   const [localTime, setLocalTime] = useState<number>(currentTimeSeconds);
@@ -323,6 +331,8 @@ export const WebVideoPlayer: React.FC<WebVideoPlayerProps> = ({
   // Sync to room position when drift exceeds tolerance
   const resyncToRoom = (actualSeconds: number) => {
     if (!anchorForSong || anchorForSong.state !== 'playing' || !isPlaying || isBufferingRef.current) return;
+    // A hidden tab throttles the iframe's time reports (YouTube extrapolates them by 1s at most), so readings run late
+    if (document.visibilityState === 'hidden') return;
     const expected = getExpectedPosition(anchorForSong);
     if (durationSeconds > 0 && expected >= durationSeconds) return;
     if (Date.now() - lastResyncAtRef.current < RESYNC_COOLDOWN_MS) return;
@@ -400,6 +410,10 @@ export const WebVideoPlayer: React.FC<WebVideoPlayerProps> = ({
         setVideoPhase('ended');
         onSongEnd?.();
         break;
+      case 'error':
+        setVideoError(event.code);
+        setWebNeedsTap(false);
+        break;
     }
   };
   playerEventRef.current = handlePlayerEvent;
@@ -414,6 +428,7 @@ export const WebVideoPlayer: React.FC<WebVideoPlayerProps> = ({
     setVideoPhase('loading');
     setWebNeedsTap(false);
     setWebAutoMuted(false);
+    setVideoError(null);
     // New video: forget the previous song's buffering and seek bookkeeping
     isBufferingRef.current = false;
     awaitingSeekResultRef.current = false;
@@ -445,7 +460,8 @@ export const WebVideoPlayer: React.FC<WebVideoPlayerProps> = ({
         events: {
           onReady: (e: any) => {
             try {
-              if (muted || followHost) {
+              // A guest who unmuted keeps the sound on the next song; a blocked autoplay falls back to muted below
+              if (mutedRef.current) {
                 e.target.mute();
               } else {
                 e.target.unMute();
@@ -486,6 +502,7 @@ export const WebVideoPlayer: React.FC<WebVideoPlayerProps> = ({
             else if (e.data === YT.PlayerState.BUFFERING) emit({ type: 'buffering' });
             else if (e.data === YT.PlayerState.ENDED) emit({ type: 'ended' });
           },
+          onError: (e: any) => emit({ type: 'error', code: e.data }),
         },
       });
     });
@@ -518,18 +535,24 @@ export const WebVideoPlayer: React.FC<WebVideoPlayerProps> = ({
     if (followHost) alignPausedToRoom();
   }, [syncAnchor]);
 
-  // A hidden tab can let the browser pause a guest's video; once visible again, rejoin a room that is still playing
+  // A hidden tab can let the browser pause the video (the host's too, which nothing else would resume); once visible
+  // again, rejoin a room that is still playing, and let a guest resync from fresh readings as soon as they arrive
   useEffect(() => {
-    if (!followHost) return;
     const handleVisibilityChange = () => {
-      if (document.visibilityState !== 'visible' || !isPlayingRef.current) return;
+      if (document.visibilityState !== 'visible') return;
+      if (followHostRef.current) {
+        // The first reading back includes the time spent hidden, not a seek's buffering: don't learn a lead from it
+        awaitingSeekResultRef.current = false;
+        lastResyncAtRef.current = Date.now() - RESYNC_COOLDOWN_MS + VISIBLE_SETTLE_MS;
+      }
+      if (!isPlayingRef.current) return;
       try {
         if (playerRef.current?.getPlayerState?.() === YT_PAUSED) playerRef.current.playVideo();
       } catch (e) {}
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [followHost]);
+  }, []);
 
   // Handle external seek target
   useEffect(() => {
@@ -549,9 +572,23 @@ export const WebVideoPlayer: React.FC<WebVideoPlayerProps> = ({
       } else {
         playerRef.current.unMute();
         playerRef.current.setVolume(100);
+        setWebAutoMuted(false);
       }
     } catch (e) {}
   }, [muted]);
+
+  // The browser muted a blocked autoplay: this tap is the gesture that lets the sound back on
+  const handleToggleMute = () => {
+    if (webAutoMuted && !muted) {
+      setWebAutoMuted(false);
+      try {
+        playerRef.current?.unMute();
+        playerRef.current?.setVolume(100);
+      } catch (e) {}
+      return;
+    }
+    onToggleMute?.();
+  };
 
   const handleUserGestureStart = () => {
     setWebNeedsTap(false);
@@ -646,6 +683,17 @@ export const WebVideoPlayer: React.FC<WebVideoPlayerProps> = ({
   const songArtist = currentSong.song?.artist || 'YouTube';
   const singerName = (currentSong.singerName || 'Singer').toUpperCase();
 
+  const muteToggleButton = onToggleMute && (
+    <button
+      type="button"
+      onClick={handleToggleMute}
+      className="p-2 rounded-xl bg-black/50 hover:bg-white/15 text-slate-300 hover:text-white transition-colors cursor-pointer border border-white/10"
+      title={muted || webAutoMuted ? 'Unmute' : 'Mute'}
+    >
+      {muted || webAutoMuted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4" />}
+    </button>
+  );
+
   const effectiveCurrentTime = localTime > 0 ? localTime : currentTimeSeconds;
   const effectiveDuration =
     localDuration > 0
@@ -705,13 +753,33 @@ export const WebVideoPlayer: React.FC<WebVideoPlayerProps> = ({
         </div>
       </div>
 
+      {/* YouTube cannot play this video: say so, and let whoever controls playback move the show on */}
+      {videoError !== null && (
+        <div className="absolute inset-0 z-40 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+          <h3 className="text-xl font-bold text-white mb-2 font-['Outfit']">This video can't be played here</h3>
+          <p className="text-slate-400 text-sm max-w-sm mb-6">
+            YouTube removed this track or does not allow it to play outside YouTube.
+          </p>
+          {onSkip && (
+            <button
+              type="button"
+              onClick={onSkip}
+              className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#8B5CF6] to-[#EC4899] text-white font-bold hover:brightness-105 active:scale-95 transition-all cursor-pointer flex items-center gap-2"
+            >
+              <SkipForward className="w-4 h-4" />
+              Skip to next song
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Autoplay user gesture prompt overlay if blocked by browser */}
-      {webNeedsTap && (
+      {webNeedsTap && videoError === null && (
         <div className="absolute inset-0 z-40 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-fade-in">
           <div className="w-16 h-16 rounded-full bg-[#8B5CF6]/20 border border-[#8B5CF6]/40 flex items-center justify-center mb-4">
             <Play className="w-8 h-8 text-white translate-x-0.5" />
           </div>
-          <h3 className="text-xl font-bold text-white mb-2 font-['Outfit']">Click to Start Audio & Video</h3>
+          <h3 className="text-xl font-bold text-white mb-2 font-['Outfit']">Click to Start Playback</h3>
           <p className="text-slate-400 text-sm max-w-sm mb-6">
             Your browser requires an initial user interaction to allow autoplay with audio.
           </p>
@@ -726,7 +794,7 @@ export const WebVideoPlayer: React.FC<WebVideoPlayerProps> = ({
       )}
 
       {/* Loading Cover */}
-      {videoPhase === 'loading' && !webNeedsTap && (
+      {videoPhase === 'loading' && !webNeedsTap && videoError === null && (
         <div className="absolute inset-0 z-30 bg-[#0A0A0F]/90 backdrop-blur-sm flex flex-col items-center justify-center">
           <div className="w-12 h-12 rounded-full border-2 border-[#8B5CF6] border-t-transparent animate-spin mb-4" />
           <p className="text-slate-300 font-medium text-sm tracking-wide">Loading karaoke track...</p>
@@ -817,16 +885,7 @@ export const WebVideoPlayer: React.FC<WebVideoPlayerProps> = ({
             </button>
           )}
 
-          {onToggleMute && (
-            <button
-              type="button"
-              onClick={onToggleMute}
-              className="p-2 rounded-xl bg-black/50 hover:bg-white/15 text-slate-300 hover:text-white transition-colors cursor-pointer border border-white/10"
-              title={muted ? 'Unmute' : 'Mute'}
-            >
-              {muted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4" />}
-            </button>
-          )}
+          {muteToggleButton}
 
           <button
             type="button"
@@ -838,6 +897,18 @@ export const WebVideoPlayer: React.FC<WebVideoPlayerProps> = ({
           </button>
         </div>
       </div>
+      )}
+
+      {/* Phone-width windowed view hides the banner and bottom bar: keep the viewer's mute toggle and the browser-muted notice reachable */}
+      {isMobile && !isFullscreen && muteToggleButton && (
+        <div className="absolute top-2 right-2 z-40 flex items-center gap-1.5">
+          {webAutoMuted && (
+            <span className="text-amber-400 text-[10px] font-semibold bg-black/60 px-2 py-0.5 rounded border border-amber-400/20">
+              Audio Muted by Browser
+            </span>
+          )}
+          {muteToggleButton}
+        </div>
       )}
 
       {/* On-screen TV QR overlay when toggled */}

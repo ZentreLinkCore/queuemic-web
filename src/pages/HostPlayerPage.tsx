@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { Power, Copy, Check, X, Music, Tv } from 'lucide-react';
 import { useRoomStore } from '../store/useRoomStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { useQueueStore } from '../store/useQueueStore';
 import { usePlaybackStore, getLivePlaybackPosition } from '../store/usePlaybackStore';
 import { useEchoRoom } from '../hooks/useEchoRoom';
+import { useRoomQueueActions } from '../hooks/useRoomQueueActions';
+import { useRoomPlayPause } from '../hooks/useRoomPlayPause';
 import { WebVideoPlayer } from '../components/player/WebVideoPlayer';
 import { WebNextUpCard } from '../components/player/WebNextUpCard';
 import { WebPlaybackControls } from '../components/player/WebPlaybackControls';
@@ -14,11 +17,14 @@ import { WebMemberListModal } from '../components/room/WebMemberListModal';
 import { WebSettingsModal } from '../components/room/WebSettingsModal';
 import { WebSongSearchModal } from '../components/search/WebSongSearchModal';
 import { roomApi } from '../api/roomApi';
-import { queueApi } from '../api/queueApi';
 import { playbackApi } from '../api/playbackApi';
 import type { RoomMember } from '../types';
+import { WebConnectionBanner } from '../components/common/WebConnectionBanner';
+import { WebToast } from '../components/common/WebToast';
 
 const HEARTBEAT_INTERVAL_MS = 30000;
+// Back from a hidden tab, report once the player has caught up and delivered a fresh position
+const VISIBLE_REPORT_DELAY_MS = 1000;
 
 const useIsMobile = () => {
   const [isMobile, setIsMobile] = useState(() => {
@@ -39,11 +45,33 @@ const useIsMobile = () => {
 
 export const HostPlayerPage: React.FC = () => {
   const { roomCode } = useParams<{ roomCode: string }>();
+  const memberId = useAuthStore((s) => s.memberId);
+  const role = useAuthStore((s) => s.role);
+  const currentRoom = useRoomStore((s) => s.currentRoom);
+
+  if (!roomCode) return <Navigate to="/" replace />;
+
+  const isOfficialHost = Boolean(
+    memberId &&
+    role === 'host' &&
+    currentRoom &&
+    currentRoom.code?.toUpperCase() === roomCode.toUpperCase()
+  );
+
+  if (!isOfficialHost) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <HostPlayerRoom roomCode={roomCode} />;
+};
+
+const HostPlayerRoom: React.FC<{ roomCode: string }> = ({ roomCode }) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
   const { currentRoom, members, leaveRoom } = useRoomStore();
-  const { currentPlaying, queue, moveItem, removeFromQueue } = useQueueStore();
+  const { currentPlaying, queue } = useQueueStore();
+  const { handleMoveItem, handleReorderItem, handleRemoveItem } = useRoomQueueActions(roomCode);
   const {
     state: playbackState,
     currentTimeSeconds,
@@ -52,7 +80,6 @@ export const HostPlayerPage: React.FC = () => {
     isFullscreen,
     setCurrentTime,
     setDuration,
-    setState: setPlaybackState,
     setFullscreen,
     setSyncAnchor,
   } = usePlaybackStore();
@@ -64,6 +91,7 @@ export const HostPlayerPage: React.FC = () => {
   const [isQueueDrawerOpen, setIsQueueDrawerOpen] = useState(false);
   const [seekTarget, setSeekTarget] = useState<number | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Set duration immediately when current track is loaded
   useEffect(() => {
@@ -99,13 +127,20 @@ export const HostPlayerPage: React.FC = () => {
       lastSentAt = Date.now();
       playbackApi.updatePlaybackState(roomCode, 'playing', getLivePlaybackPosition(), queueItemId).catch(() => {});
     }, 500);
-    return () => clearInterval(interval);
+
+    // The video can stall or be paused while the tab is hidden: re-anchor guests on where it really is, not up to 30s later
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        lastSentAt = Math.min(lastSentAt, Date.now() - HEARTBEAT_INTERVAL_MS + VISIBLE_REPORT_DELAY_MS);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [roomCode, currentPlaying?.id, playbackState]);
 
-  if (!roomCode) {
-    navigate('/');
-    return null;
-  }
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(roomCode.toUpperCase());
@@ -113,23 +148,7 @@ export const HostPlayerPage: React.FC = () => {
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
-  const handlePlayPause = async () => {
-    const nextState = playbackState === 'playing' ? 'paused' : 'playing';
-    const position = Math.max(0, Math.round(getLivePlaybackPosition() * 100) / 100);
-    setPlaybackState(nextState);
-    setCurrentTime(position);
-    setSyncAnchor({
-      queueItemId: currentPlaying?.id ?? null,
-      state: nextState,
-      positionSeconds: position,
-      receivedAtMs: Date.now(),
-    });
-    try {
-      await playbackApi.updatePlaybackState(roomCode, nextState, position, currentPlaying?.id);
-    } catch (err) {
-      console.warn('Playback state error:', err);
-    }
-  };
+  const handlePlayPause = useRoomPlayPause(roomCode);
 
   const handleSkip = async () => {
     try {
@@ -160,24 +179,6 @@ export const HostPlayerPage: React.FC = () => {
       await playbackApi.updatePlaybackState(roomCode, playbackState, seconds, currentPlaying?.id);
     } catch (err) {
       console.warn('Seek error:', err);
-    }
-  };
-
-  const handleMoveItem = async (queueId: number, direction: 'up' | 'down' | 'top' | 'bottom') => {
-    moveItem(queueId, direction);
-    try {
-      await queueApi.moveQueueItem(roomCode, queueId, { direction });
-    } catch (err) {
-      console.warn('Move queue error:', err);
-    }
-  };
-
-  const handleRemoveItem = async (queueId: number) => {
-    removeFromQueue(queueId);
-    try {
-      await queueApi.removeFromQueue(roomCode, queueId);
-    } catch (err) {
-      console.warn('Remove queue error:', err);
     }
   };
 
@@ -342,6 +343,7 @@ export const HostPlayerPage: React.FC = () => {
           </button>
         </div>
       </header>
+      <WebConnectionBanner />
 
       {/* Mobile View (< lg): Fixed Video & Controls at top, scrollable Queue Manager below */}
       {isMobile && !isFullscreen ? (
@@ -409,6 +411,7 @@ export const HostPlayerPage: React.FC = () => {
               title="Host Queue Manager"
               subtitle="Reorder, skip, or remove songs in queue"
               onMoveItem={handleMoveItem}
+              onReorder={handleReorderItem}
               onRemoveItem={handleRemoveItem}
               onOpenSearch={() => setIsSearchModalVisible(true)}
             />
@@ -429,7 +432,7 @@ export const HostPlayerPage: React.FC = () => {
               className={
                 isFullscreen
                   ? 'w-full h-full'
-                  : 'w-full h-full flex flex-col bg-black rounded-2xl overflow-hidden border border-white/[0.08]'
+                  : 'w-full h-full flex flex-col bg-black rounded-2xl overflow-hidden border border-white/[0.08] shadow-[0_0_60px_-15px_rgba(139,92,246,0.25)]'
               }
             >
               <div className="flex-1 min-h-0 w-full relative overflow-hidden bg-black">
@@ -490,6 +493,7 @@ export const HostPlayerPage: React.FC = () => {
                 title="Host Queue Manager"
                 subtitle="Reorder, skip, or remove songs in queue"
                 onMoveItem={handleMoveItem}
+                onReorder={handleReorderItem}
                 onRemoveItem={handleRemoveItem}
                 onOpenSearch={() => setIsSearchModalVisible(true)}
                 className="flex-1 min-h-0 h-full"
@@ -522,6 +526,7 @@ export const HostPlayerPage: React.FC = () => {
                 canReorder={true}
                 isHost={true}
                 onMoveItem={handleMoveItem}
+                onReorder={handleReorderItem}
                 onRemoveItem={handleRemoveItem}
                 onOpenSearch={() => {
                   setIsQueueDrawerOpen(false);
@@ -562,7 +567,9 @@ export const HostPlayerPage: React.FC = () => {
         visible={isSearchModalVisible}
         roomCode={roomCode}
         onClose={() => setIsSearchModalVisible(false)}
+        onQueued={(title, singer) => setToastMessage(`Added "${title}" for ${singer}`)}
       />
+      {toastMessage && <WebToast message={toastMessage} onDone={() => setToastMessage(null)} />}
     </div>
   );
 };

@@ -158,7 +158,7 @@ export const HomePage: React.FC = () => {
         </main>
 
         {/* Scroll Hint */}
-        <div className="shrink-0 pb-1 text-[11px] text-slate-500 font-medium flex items-center gap-1.5 opacity-60">
+        <div className="shrink-0 pb-1 text-[11px] text-slate-400 font-medium flex items-center gap-1.5 opacity-90">
           <span>Scroll down for party features</span>
           <span>↓</span>
         </div>

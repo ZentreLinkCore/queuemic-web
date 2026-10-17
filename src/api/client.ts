@@ -3,7 +3,7 @@ import { useAuthStore } from '../store/useAuthStore';
 
 export function getApiBaseUrl(): string {
   const env = (import.meta as any).env || {};
-  const envUrl = env.EXPO_PUBLIC_API_URL || env.VITE_API_URL || 'https://api-queuemic.laravel.cloud';
+  const envUrl = env.VITE_API_URL || env.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
   const cleanUrl = String(envUrl).trim().replace(/\/+$/, '');
   return cleanUrl.endsWith('/api/v1') ? cleanUrl : `${cleanUrl}/api/v1`;
 }

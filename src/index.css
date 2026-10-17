@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 :root {
-  --bg-color: #0A0A0F;
+  --bg-color: #0D0E15;
   --surface-color: #12131C;
-  --surface-light: #1C1E2D;
+  --surface-light: #1C1F30;
   --surface-elevated: #242738;
   --primary: #8B5CF6;
   --primary-end: #EC4899;
@@ -71,3 +71,32 @@ body {
   pointer-events: none !important;
   background-color: #000000 !important;
 }
+
+/* Stage Live Equalizer Wave Animations */
+@keyframes equalizer-1 {
+  0%, 100% { height: 35%; }
+  50% { height: 100%; }
+}
+
+@keyframes equalizer-2 {
+  0%, 100% { height: 95%; }
+  50% { height: 30%; }
+}
+
+@keyframes equalizer-3 {
+  0%, 100% { height: 45%; }
+  50% { height: 85%; }
+}
+
+.animate-equalizer-1 {
+  animation: equalizer-1 0.75s ease-in-out infinite;
+}
+
+.animate-equalizer-2 {
+  animation: equalizer-2 0.95s ease-in-out infinite 0.15s;
+}
+
+.animate-equalizer-3 {
+  animation: equalizer-3 0.8s ease-in-out infinite 0.3s;
+}
+

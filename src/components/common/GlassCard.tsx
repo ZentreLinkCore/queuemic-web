@@ -3,7 +3,7 @@ import React from 'react';
 export interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
-  glow?: 'none' | 'primary' | 'pink' | 'cyan';
+  glow?: 'none' | 'primary' | 'pink' | 'cyan' | 'danger';
   variant?: 'surface' | 'light' | 'elevated';
 }
 
@@ -25,6 +25,7 @@ export const GlassCard: React.FC<GlassCardProps> = ({
     primary: 'border-[#8B5CF6]/40',
     pink: 'border-[#EC4899]/40',
     cyan: 'border-[#06B6D4]/40',
+    danger: 'border-[#F43F5E] shadow-[0_4px_20px_rgba(244,63,94,0.18)]',
   }[glow];
 
   return (

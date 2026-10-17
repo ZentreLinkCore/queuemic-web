@@ -4,6 +4,8 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { HostPlayerPage } from '../../src/pages/HostPlayerPage';
 import { useQueueStore } from '../../src/store/useQueueStore';
 import { usePlaybackStore } from '../../src/store/usePlaybackStore';
+import { useAuthStore } from '../../src/store/useAuthStore';
+import { useRoomStore } from '../../src/store/useRoomStore';
 import { playbackApi } from '../../src/api/playbackApi';
 import type { KaraokeQueueItem } from '../../src/types';
 
@@ -41,6 +43,10 @@ describe('HostPlayerPage position reports', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.mocked(playbackApi.updatePlaybackState).mockClear();
+    useAuthStore.setState({ memberId: 1, role: 'host' });
+    useRoomStore.setState({
+      currentRoom: { id: 1, code: 'ABC123', name: 'Party Room', status: 'active', settings: {} } as any,
+    });
     useQueueStore.getState().setQueue([]);
     useQueueStore.getState().setCurrentPlaying(song);
     usePlaybackStore.getState().setState('playing');
@@ -49,6 +55,8 @@ describe('HostPlayerPage position reports', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    useAuthStore.setState({ memberId: null, role: null });
+    useRoomStore.setState({ currentRoom: null });
     useQueueStore.getState().setCurrentPlaying(null);
     usePlaybackStore.getState().setState('paused');
     usePlaybackStore.getState().resetPlayback();
@@ -89,6 +97,33 @@ describe('HostPlayerPage position reports', () => {
     act(() => usePlaybackStore.getState().setState('playing'));
     act(() => vi.advanceTimersByTime(600));
     expect(playbackApi.updatePlaybackState).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports again a second after its tab is shown, instead of leaving guests on the old anchor for up to 30s', () => {
+    let visibility: DocumentVisibilityState = 'visible';
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => visibility });
+    try {
+      renderHost();
+      act(() => vi.advanceTimersByTime(600));
+      expect(playbackApi.updatePlaybackState).toHaveBeenCalledTimes(1);
+
+      visibility = 'hidden';
+      act(() => {
+        document.dispatchEvent(new Event('visibilitychange'));
+      });
+      act(() => vi.advanceTimersByTime(10000));
+      visibility = 'visible';
+      act(() => {
+        document.dispatchEvent(new Event('visibilitychange'));
+      });
+
+      act(() => vi.advanceTimersByTime(500));
+      expect(playbackApi.updatePlaybackState).toHaveBeenCalledTimes(1);
+      act(() => vi.advanceTimersByTime(1000));
+      expect(playbackApi.updatePlaybackState).toHaveBeenCalledTimes(2);
+    } finally {
+      delete (document as any).visibilityState;
+    }
   });
 
   it('stays quiet while the player has no position yet', () => {

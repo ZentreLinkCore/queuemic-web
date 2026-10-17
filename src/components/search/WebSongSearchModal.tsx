@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, X, Loader2, Music, Check, Plus } from 'lucide-react';
 import type { Song } from '../../types';
 import { songApi } from '../../api/songApi';
@@ -13,6 +13,8 @@ export interface WebSongSearchModalProps {
   visible: boolean;
   roomCode: string;
   onClose: () => void;
+  /** A song was queued; the modal closes right after, so the page shows the confirmation */
+  onQueued?: (title: string, singerName: string) => void;
 }
 
 const CATEGORIES = [
@@ -29,6 +31,7 @@ export const WebSongSearchModal: React.FC<WebSongSearchModalProps> = ({
   visible,
   roomCode,
   onClose,
+  onQueued,
 }) => {
   const { nickname } = useAuthStore();
   const { queue, currentPlaying, addToQueue } = useQueueStore();
@@ -44,24 +47,28 @@ export const WebSongSearchModal: React.FC<WebSongSearchModalProps> = ({
 
   const debouncedQuery = useDebounce(query, 300);
 
-  // Clear selection on modal open/close
+  // Clear selection on modal open/close: closing cancels it, so nothing is queued without the confirm step
   useEffect(() => {
     if (visible) {
       setErrorMessage(null);
-      setSelectedSong(null);
     }
+    setSelectedSong(null);
   }, [visible]);
+
+  // The window listener below outlives renders; it calls the latest confirm handler
+  const confirmAddRef = useRef<() => void>(() => {});
 
   // Keyboard shortcut: Enter to confirm add, Escape to cancel selection
   useEffect(() => {
-    if (!selectedSong || submitting) return;
+    // The modal stays mounted while hidden: only listen while it is on screen
+    if (!visible || !selectedSong || submitting) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Enter') handleConfirmAddQueue();
+      if (e.key === 'Enter') confirmAddRef.current();
       if (e.key === 'Escape') setSelectedSong(null);
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedSong, submitting]);
+  }, [visible, selectedSong, submitting]);
 
   // Execute search when debounced query changes
   useEffect(() => {
@@ -120,7 +127,8 @@ export const WebSongSearchModal: React.FC<WebSongSearchModalProps> = ({
     setSubmitting(true);
     setErrorMessage(null);
 
-    const singer = nickname?.trim() || 'Host';
+    const singer =
+      nickname?.trim() || (useAuthStore.getState().role === 'guest' ? 'Singer' : 'Host');
 
     try {
       const res = await queueApi.addToQueue(roomCode, {
@@ -134,12 +142,15 @@ export const WebSongSearchModal: React.FC<WebSongSearchModalProps> = ({
 
       setRecentlyQueuedIds((prev) => new Set(prev).add(selectedSong.id));
       setSelectedSong(null);
+      onQueued?.(selectedSong.title, singer);
+      onClose();
     } catch (err: any) {
       setErrorMessage(err?.message || 'Failed to add song to queue');
     } finally {
       setSubmitting(false);
     }
   };
+  confirmAddRef.current = handleConfirmAddQueue;
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in select-none">

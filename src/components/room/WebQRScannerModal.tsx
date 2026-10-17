@@ -19,10 +19,22 @@ export const WebQRScannerModal: React.FC<WebQRScannerModalProps> = ({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const barcodeDetectorRef = useRef<any>(null);
 
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
+
+  // Initialize native BarcodeDetector if available
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'BarcodeDetector' in window) {
+      try {
+        barcodeDetectorRef.current = new (window as any).BarcodeDetector({ formats: ['qr_code'] });
+      } catch {
+        barcodeDetectorRef.current = null;
+      }
+    }
+  }, []);
 
   const stopCamera = useCallback(() => {
     if (animationFrameRef.current) {
@@ -70,31 +82,46 @@ export const WebQRScannerModal: React.FC<WebQRScannerModalProps> = ({
     return null;
   };
 
-  const scanFrame = useCallback(() => {
+  const scanFrame = useCallback(async () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    if (!video || !canvas || video.readyState !== video.HAVE_ENOUGH_DATA) {
+    if (!video || video.readyState !== video.HAVE_ENOUGH_DATA) {
       animationFrameRef.current = requestAnimationFrame(scanFrame);
       return;
     }
 
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    if (!ctx) {
-      animationFrameRef.current = requestAnimationFrame(scanFrame);
-      return;
+    let detectedData: string | null = null;
+
+    // 1. Try native BarcodeDetector if supported
+    if (barcodeDetectorRef.current) {
+      try {
+        const barcodes = await barcodeDetectorRef.current.detect(video);
+        if (barcodes && barcodes.length > 0 && barcodes[0].rawValue) {
+          detectedData = barcodes[0].rawValue;
+        }
+      } catch {}
     }
 
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    // 2. Fallback to jsQR
+    if (!detectedData && canvas) {
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      if (ctx) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const code = jsQR(imageData.data, imageData.width, imageData.height, {
-      inversionAttempts: 'dontInvert',
-    });
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+          inversionAttempts: 'dontInvert',
+        });
+        if (code && code.data) {
+          detectedData = code.data;
+        }
+      }
+    }
 
-    if (code && code.data) {
-      const extracted = extractRoomCode(code.data);
+    if (detectedData) {
+      const extracted = extractRoomCode(detectedData);
       if (extracted) {
         // Haptic feedback if supported on mobile device
         if (typeof window !== 'undefined' && 'vibrate' in navigator) {

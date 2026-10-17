@@ -2,6 +2,7 @@ import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 import { API_BASE_URL } from '../api/client';
 import { useAuthStore } from '../store/useAuthStore';
+import { useRoomStore } from '../store/useRoomStore';
 
 function resolveConstructor(imported: any, name: string): any {
   if (typeof imported === 'function') return imported;
@@ -24,6 +25,7 @@ if (typeof globalThis !== 'undefined') {
 
 let echoInstance: any = null;
 let activeConnection = '';
+let echoInitFailed = false;
 
 const echoResetListeners = new Set<() => void>();
 
@@ -52,6 +54,26 @@ function describeConnection(config: typeof serverConfig): string {
 
 let isFetchingConfig = false;
 
+// A failed config fetch would leave realtime dead for the session (guests never call getEcho again): retry with backoff
+const CONFIG_RETRY_MIN_MS = 2000;
+const CONFIG_RETRY_MAX_MS = 30000;
+let configRetryDelayMs = CONFIG_RETRY_MIN_MS;
+let configRetryTimer: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleConfigRetry() {
+  if (configRetryTimer || serverConfig) return;
+  configRetryTimer = setTimeout(async () => {
+    configRetryTimer = null;
+    await fetchBroadcastingConfig();
+    if (serverConfig) {
+      configRetryDelayMs = CONFIG_RETRY_MIN_MS;
+      return;
+    }
+    configRetryDelayMs = Math.min(CONFIG_RETRY_MAX_MS, configRetryDelayMs * 2);
+    scheduleConfigRetry();
+  }, configRetryDelayMs);
+}
+
 export async function fetchBroadcastingConfig(): Promise<any> {
   if (serverConfig) return serverConfig;
   if (isFetchingConfig) return null;
@@ -68,6 +90,9 @@ export async function fetchBroadcastingConfig(): Promise<any> {
       const configConnection = describeConnection(serverConfig);
       if (echoInstance && configConnection && configConnection !== activeConnection) {
         disconnectEcho();
+        echoResetListeners.forEach((listener) => listener());
+      } else if (echoInitFailed) {
+        echoInitFailed = false;
         echoResetListeners.forEach((listener) => listener());
       }
       return serverConfig;
@@ -93,7 +118,10 @@ export function getEcho(): any {
   }
 
   try {
-    const appKey = serverConfig?.key || (import.meta as any).env?.VITE_REVERB_APP_KEY || '2n9ub0vuljc3wvqv0tgl';
+    const appKey = serverConfig?.key || (import.meta as any).env?.VITE_REVERB_APP_KEY;
+    if (!appKey) {
+      throw new Error('No Reverb/Pusher app key: broadcasting config unavailable and VITE_REVERB_APP_KEY unset');
+    }
     const isPusher = serverConfig?.broadcaster === 'pusher';
     let connectionOptions: Record<string, any>;
 
@@ -194,7 +222,12 @@ export function getEcho(): any {
 
     return echoInstance;
   } catch (err) {
-    console.warn('⚠️ [Echo Init Error]:', err);
+    console.error('⚠️ [Echo Init Error] realtime unavailable:', err);
+    echoInitFailed = true;
+    useRoomStore.getState().setConnected(false);
+    // Once the config arrives, fetchBroadcastingConfig sees echoInitFailed and asks the rooms to re-join
+    scheduleConfigRetry();
+    // Inert stub keeps callers from crashing; the offline banner is shown because isConnected stays false.
     return {
       join: () => ({
         here: () => ({ joining: () => ({ leaving: () => ({ error: () => ({}) }) }) }),

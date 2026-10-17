@@ -10,8 +10,12 @@ import type { RoomMember, KaraokeQueueItem } from '../types';
 import { queueApi } from '../api/queueApi';
 import { roomApi } from '../api/roomApi';
 import { playbackApi } from '../api/playbackApi';
+import { bindConnectionState } from '../services/connectionState';
+import { getExpectedPosition } from '../components/player/WebVideoPlayer';
 
 const PRESENCE_HEARTBEAT_MS = 60_000;
+// The server stores whole seconds stamped with a 1s-precision updated_at, so its position can be this far off the host's
+const SERVER_POSITION_PRECISION_SECONDS = 2;
 
 export interface UseEchoRoomOptions {
   onRoomClosed?: (reason?: string) => void;
@@ -180,10 +184,21 @@ export function useEchoRoom(
         const anchor = playback.syncAnchor;
         if (anchor?.queueItemId === item.id && anchor.receivedAtMs >= requestedAtMs) return;
 
+        const positionSeconds = (Number(data.current_time_seconds) || 0) + ageSeconds;
+        // A guest back on a visible tab still holds the host's own report: keep it while the server agrees, since
+        // the server's coarser copy would land the guest up to 1.5s off the host until the next report
+        if (
+          anchor?.queueItemId === item.id &&
+          anchor.state === state &&
+          Math.abs(getExpectedPosition(anchor) - positionSeconds) <= SERVER_POSITION_PRECISION_SECONDS
+        ) {
+          return;
+        }
+
         playback.setSyncAnchor({
           queueItemId: item.id,
           state,
-          positionSeconds: (Number(data.current_time_seconds) || 0) + ageSeconds,
+          positionSeconds,
           receivedAtMs: Date.now(),
         });
       } catch (err: any) {
@@ -238,10 +253,10 @@ export function useEchoRoom(
       hasBeenConnected = true;
     };
     connection?.bind('state_change', resyncOnReconnect);
+    const unbindConnectionState = bindConnectionState(connection, setConnected);
 
     // Heartbeat
     const presenceTimer = setInterval(() => {
-      if (typeof document !== 'undefined' && document.visibilityState !== 'visible' && !isHost) return;
       roomApi.heartbeat(normalizedCode).catch((err: any) => {
         if (err?.code === 'ROOM_NOT_FOUND') {
           options?.onRoomClosed?.(err?.message || 'This karaoke room no longer exists or has ended.');
@@ -307,6 +322,7 @@ export function useEchoRoom(
         document.removeEventListener('visibilitychange', handleVisibilityChange);
       }
       connection?.unbind('state_change', resyncOnReconnect);
+      unbindConnectionState();
       echo.leave(`room.${normalizedCode}`);
     };
   }, [roomCode, isHost, echoGeneration, setConnected, addMember, removeMember, setMembers, setQueue, setCurrentPlaying, updateRoomSettings]);

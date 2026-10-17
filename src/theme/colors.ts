@@ -1,8 +1,8 @@
 export const colors = {
   // Backgrounds
-  background: '#0A0A0F',
+  background: '#0D0E15',
   surface: '#12131C',
-  surfaceLight: '#1C1E2D',
+  surfaceLight: '#1C1F30',
   surfaceElevated: '#242738',
 
   // Accent & Brand Colors

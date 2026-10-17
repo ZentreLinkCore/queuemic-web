@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { Copy, Check, Tv, Activity } from 'lucide-react';
 import { useRoomStore } from '../store/useRoomStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useQueueStore } from '../store/useQueueStore';
-import { usePlaybackStore, getLivePlaybackPosition } from '../store/usePlaybackStore';
+import { usePlaybackStore } from '../store/usePlaybackStore';
 import { useEchoRoom } from '../hooks/useEchoRoom';
+import { useRoomQueueActions } from '../hooks/useRoomQueueActions';
+import { useRoomPlayPause } from '../hooks/useRoomPlayPause';
 import { WebVideoPlayer } from '../components/player/WebVideoPlayer';
 import { WebGuestProgressBar } from '../components/player/WebGuestProgressBar';
 import { WebPlaybackControls } from '../components/player/WebPlaybackControls';
@@ -15,8 +17,9 @@ import { WebQRCodeDisplay } from '../components/room/WebQRCodeDisplay';
 import { WebMemberListModal } from '../components/room/WebMemberListModal';
 import { WebSongSearchModal } from '../components/search/WebSongSearchModal';
 import { roomApi } from '../api/roomApi';
-import { queueApi } from '../api/queueApi';
 import { playbackApi } from '../api/playbackApi';
+import { WebConnectionBanner } from '../components/common/WebConnectionBanner';
+import { WebToast } from '../components/common/WebToast';
 
 const useIsMobile = () => {
   const [isMobile, setIsMobile] = useState(() =>
@@ -36,19 +39,38 @@ const useIsMobile = () => {
 
 export const GuestRoomPage: React.FC = () => {
   const { roomCode } = useParams<{ roomCode: string }>();
+  const memberId = useAuthStore((s) => s.memberId);
+  const currentRoom = useRoomStore((s) => s.currentRoom);
+
+  if (!roomCode) return <Navigate to="/" replace />;
+
+  // Official member validation: Must have joined via entering code or scanning QR
+  const isOfficialMember = Boolean(
+    memberId &&
+    currentRoom &&
+    currentRoom.code?.toUpperCase() === roomCode.toUpperCase()
+  );
+
+  if (!isOfficialMember) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <GuestRoom roomCode={roomCode} />;
+};
+
+const GuestRoom: React.FC<{ roomCode: string }> = ({ roomCode }) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
   const { currentRoom, members, leaveRoom, setLastRoom } = useRoomStore();
   const { memberId } = useAuthStore();
-  const { currentPlaying, queue, moveItem, removeFromQueue } = useQueueStore();
+  const { currentPlaying, queue } = useQueueStore();
   const {
     state: playbackState,
     currentTimeSeconds,
     durationSeconds,
     syncAnchor,
     isFullscreen,
-    setState: setPlaybackState,
     setCurrentTime,
     setDuration,
     setFullscreen,
@@ -59,8 +81,10 @@ export const GuestRoomPage: React.FC = () => {
   const [isMemberListVisible, setIsMemberListVisible] = useState(false);
   const [isSearchModalVisible, setIsSearchModalVisible] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'video' | 'progress'>('video');
   const [isMuted, setIsMuted] = useState(true);
+  const [seekTarget, setSeekTarget] = useState<number | null>(null);
 
   // Keep lastRoom updated in persistent storage so guest can rejoin from Home
   useEffect(() => {
@@ -72,6 +96,25 @@ export const GuestRoomPage: React.FC = () => {
       });
     }
   }, [roomCode, currentRoom?.name, setLastRoom]);
+
+  // Validate active room status with backend API
+  useEffect(() => {
+    if (!roomCode) return;
+    roomApi
+      .getRoomDetails(roomCode)
+      .then((res) => {
+        if (res?.data?.status && res.data.status !== 'active') {
+          leaveRoom();
+          navigate('/', { replace: true });
+        }
+      })
+      .catch((err) => {
+        if (err?.status === 404 || err?.status === 403 || err?.code === 'ROOM_NOT_FOUND') {
+          leaveRoom();
+          navigate('/', { replace: true });
+        }
+      });
+  }, [roomCode, leaveRoom, navigate]);
 
   // Set duration immediately when current track is loaded
   useEffect(() => {
@@ -95,10 +138,6 @@ export const GuestRoomPage: React.FC = () => {
     },
   });
 
-  if (!roomCode) {
-    navigate('/');
-    return null;
-  }
 
   const canReorder = Boolean(
     currentRoom?.settings?.allow_guest_reorder ??
@@ -112,30 +151,15 @@ export const GuestRoomPage: React.FC = () => {
     false
   );
 
+  const { handleMoveItem, handleReorderItem, handleRemoveItem } = useRoomQueueActions(roomCode, { canReorder });
+
   const handleCopyCode = () => {
     navigator.clipboard.writeText(roomCode.toUpperCase());
     setCopiedCode(true);
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
-  const handlePlayPause = async () => {
-    if (!canControlPlayback) return;
-    const nextState = playbackState === 'playing' ? 'paused' : 'playing';
-    const position = Math.max(0, Math.round(getLivePlaybackPosition() * 100) / 100);
-    setPlaybackState(nextState);
-    setCurrentTime(position);
-    setSyncAnchor({
-      queueItemId: currentPlaying?.id ?? null,
-      state: nextState,
-      positionSeconds: position,
-      receivedAtMs: Date.now(),
-    });
-    try {
-      await playbackApi.updatePlaybackState(roomCode, nextState, position, currentPlaying?.id);
-    } catch (err) {
-      console.warn('Playback error:', err);
-    }
-  };
+  const handlePlayPause = useRoomPlayPause(roomCode, { canControl: canControlPlayback });
 
   const handleSkip = async () => {
     if (!canControlPlayback) return;
@@ -145,8 +169,6 @@ export const GuestRoomPage: React.FC = () => {
       console.warn('Skip song error:', err);
     }
   };
-
-  const [seekTarget, setSeekTarget] = useState<number | null>(null);
 
   const handleSeek = async (seconds: number) => {
     if (!canControlPlayback) return;
@@ -162,25 +184,6 @@ export const GuestRoomPage: React.FC = () => {
       await playbackApi.updatePlaybackState(roomCode, playbackState, seconds, currentPlaying?.id);
     } catch (err) {
       console.warn('Seek error:', err);
-    }
-  };
-
-  const handleMoveItem = async (queueId: number, direction: 'up' | 'down' | 'top' | 'bottom') => {
-    if (!canReorder) return;
-    moveItem(queueId, direction);
-    try {
-      await queueApi.moveQueueItem(roomCode, queueId, { direction });
-    } catch (err) {
-      console.warn('Move queue error:', err);
-    }
-  };
-
-  const handleRemoveItem = async (queueId: number) => {
-    removeFromQueue(queueId);
-    try {
-      await queueApi.removeFromQueue(roomCode, queueId);
-    } catch (err) {
-      console.warn('Remove queue error:', err);
     }
   };
 
@@ -343,6 +346,7 @@ export const GuestRoomPage: React.FC = () => {
           </button>
         </div>
       </header>
+      <WebConnectionBanner />
 
       {/* Mobile View (< lg): Fixed Edge-to-Edge Video/Progress at top, scrollable Queue below (No card wrapper) */}
       {isMobile && !isFullscreen ? (
@@ -462,6 +466,7 @@ export const GuestRoomPage: React.FC = () => {
               title="Up Next in Queue"
               subtitle={canReorder ? 'Reorder songs or jump to Top' : `${queue.length} songs waiting`}
               onMoveItem={handleMoveItem}
+              onReorder={handleReorderItem}
               onRemoveItem={handleRemoveItem}
               onOpenSearch={() => setIsSearchModalVisible(true)}
             />
@@ -483,7 +488,7 @@ export const GuestRoomPage: React.FC = () => {
               <div
                 className={
                   viewMode === 'video'
-                    ? 'w-full h-full flex flex-col bg-black rounded-2xl overflow-hidden border border-white/[0.08]'
+                    ? 'w-full h-full flex flex-col bg-black rounded-2xl overflow-hidden border border-white/[0.08] shadow-[0_0_60px_-15px_rgba(6,182,212,0.2)]'
                     : 'hidden'
                 }
               >
@@ -571,6 +576,7 @@ export const GuestRoomPage: React.FC = () => {
                 title="Up Next in Queue"
                 subtitle={canReorder ? 'Reorder songs or jump to Top' : `${queue.length} songs waiting`}
                 onMoveItem={handleMoveItem}
+                onReorder={handleReorderItem}
                 onRemoveItem={handleRemoveItem}
                 onOpenSearch={() => setIsSearchModalVisible(true)}
                 className="flex-1 min-h-0 h-full"
@@ -599,7 +605,9 @@ export const GuestRoomPage: React.FC = () => {
         visible={isSearchModalVisible}
         roomCode={roomCode}
         onClose={() => setIsSearchModalVisible(false)}
+        onQueued={(title, singer) => setToastMessage(`Added "${title}" for ${singer}`)}
       />
+      {toastMessage && <WebToast message={toastMessage} onDone={() => setToastMessage(null)} />}
     </div>
   );
 };

@@ -144,7 +144,7 @@ export const WebNicknameModal: React.FC<WebNicknameModalProps> = ({
                 placeholder="e.g. Rockstar 42"
                 maxLength={30}
                 autoFocus
-                className="w-full bg-[#1C1E2D] border border-white/10 focus:border-[#8B5CF6] rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-[#8B5CF6] transition-all"
+                className="w-full bg-[#1C1F30] border border-white/10 focus:border-[#8B5CF6] rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-[#8B5CF6] transition-all"
               />
             </div>
 
