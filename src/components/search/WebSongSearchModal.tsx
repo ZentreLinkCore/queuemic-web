@@ -13,6 +13,8 @@ export interface WebSongSearchModalProps {
   visible: boolean;
   roomCode: string;
   onClose: () => void;
+  /** A song was queued; the modal closes right after, so the page shows the confirmation */
+  onQueued?: (title: string, singerName: string) => void;
 }
 
 const CATEGORIES = [
@@ -29,6 +31,7 @@ export const WebSongSearchModal: React.FC<WebSongSearchModalProps> = ({
   visible,
   roomCode,
   onClose,
+  onQueued,
 }) => {
   const { nickname } = useAuthStore();
   const { queue, currentPlaying, addToQueue } = useQueueStore();
@@ -41,6 +44,7 @@ export const WebSongSearchModal: React.FC<WebSongSearchModalProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [recentlyQueuedIds, setRecentlyQueuedIds] = useState<Set<number>>(new Set());
+  const [singerName, setSingerName] = useState('');
 
   const debouncedQuery = useDebounce(query, 300);
 
@@ -111,6 +115,7 @@ export const WebSongSearchModal: React.FC<WebSongSearchModalProps> = ({
       setSelectedSong(null);
     } else {
       setSelectedSong(song);
+      setSingerName(nickname?.trim() || 'Host');
       setErrorMessage(null);
     }
   };
@@ -120,7 +125,7 @@ export const WebSongSearchModal: React.FC<WebSongSearchModalProps> = ({
     setSubmitting(true);
     setErrorMessage(null);
 
-    const singer = nickname?.trim() || 'Host';
+    const singer = singerName.trim() || nickname?.trim() || 'Host';
 
     try {
       const res = await queueApi.addToQueue(roomCode, {
@@ -134,6 +139,8 @@ export const WebSongSearchModal: React.FC<WebSongSearchModalProps> = ({
 
       setRecentlyQueuedIds((prev) => new Set(prev).add(selectedSong.id));
       setSelectedSong(null);
+      onQueued?.(selectedSong.title, singer);
+      onClose();
     } catch (err: any) {
       setErrorMessage(err?.message || 'Failed to add song to queue');
     } finally {
@@ -383,6 +390,21 @@ export const WebSongSearchModal: React.FC<WebSongSearchModalProps> = ({
                   <span className="font-mono text-[11px] text-slate-500">{selectedSong.durationFormatted}</span>
                 </div>
               </div>
+            </div>
+
+            {/* Singer Name (defaults to the member's nickname) */}
+            <div className="w-full sm:w-44 shrink-0">
+              <label htmlFor="singer-name-input" className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                Singer Name
+              </label>
+              <input
+                id="singer-name-input"
+                type="text"
+                value={singerName}
+                onChange={(e) => setSingerName(e.target.value)}
+                maxLength={50}
+                className="w-full bg-[#1C1F30] border border-white/10 focus:border-[#8B5CF6] rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-[#8B5CF6]"
+              />
             </div>
 
             {/* Action Buttons */}

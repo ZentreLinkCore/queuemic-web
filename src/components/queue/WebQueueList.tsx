@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Plus } from 'lucide-react';
 import type { KaraokeQueueItem } from '../../types';
 import { WebQueueItemCard } from './WebQueueItemCard';
@@ -13,6 +13,8 @@ export interface WebQueueListProps {
   title?: string;
   subtitle?: string;
   onMoveItem?: (queueId: number, direction: 'up' | 'down' | 'top' | 'bottom') => void;
+  /** Drag-and-drop reorder: `targetPosition` is the 1-based position in the queue (backend `target_position`). */
+  onReorder?: (queueId: number, targetPosition: number) => void;
   onRemoveItem?: (queueId: number) => void;
   onOpenSearch?: () => void;
   nextSong?: KaraokeQueueItem | null;
@@ -28,6 +30,7 @@ export const WebQueueList: React.FC<WebQueueListProps> = ({
   title,
   subtitle,
   onMoveItem,
+  onReorder,
   onRemoveItem,
   onOpenSearch,
   nextSong,
@@ -35,6 +38,21 @@ export const WebQueueList: React.FC<WebQueueListProps> = ({
   className = '',
 }) => {
   const isScrollable = className.includes('h-full') || className.includes('flex-1') || className.includes('h-');
+  const [draggingId, setDraggingId] = useState<number | null>(null);
+  const canDrag = canReorder && Boolean(onReorder);
+
+  const handleDrop = (targetIndex: number) => {
+    if (draggingId !== null && onReorder) {
+      const fromIndex = queue.findIndex((q) => q.id === draggingId);
+      if (fromIndex !== -1 && fromIndex !== targetIndex) onReorder(draggingId, targetIndex + 1);
+    }
+    setDraggingId(null);
+  };
+
+  const handleRemove = (item: KaraokeQueueItem) => {
+    if (!window.confirm(`Remove "${item.song?.title || 'this song'}" from the queue?`)) return;
+    onRemoveItem?.(item.id);
+  };
 
   return (
     <GlassCard
@@ -83,10 +101,8 @@ export const WebQueueList: React.FC<WebQueueListProps> = ({
           <div className="w-[68px] h-[68px] rounded-full bg-[#1C1F30] border-[1.5px] border-[#8B5CF6]/40 flex items-center justify-center mb-2.5">
             <span className="text-3xl select-none leading-none">🎙️</span>
           </div>
-          <h4 className="text-base font-bold text-white mb-1 font-['Outfit']">The Stage is Empty!</h4>
-          <p className="text-xs text-[#94A3B8] max-w-xs leading-relaxed">
-            Be the first to queue your favorite song. Search from millions of karaoke hits.
-          </p>
+          <h4 className="text-base font-bold text-white mb-1 font-['Outfit']">Queue is empty.</h4>
+          <p className="text-xs text-[#94A3B8] max-w-xs leading-relaxed">Search songs to get the party started!</p>
         </div>
       ) : (
         /* List of tracks - Scrollable with custom styled scrollbar */
@@ -100,17 +116,27 @@ export const WebQueueList: React.FC<WebQueueListProps> = ({
             const canRemove = isHost || isMySong;
 
             return (
-              <WebQueueItemCard
+              <div
                 key={item.id}
-                item={item}
-                canReorder={canReorder}
-                canMoveUp={index > 0}
-                canMoveDown={index < queue.length - 1}
-                onMoveTop={() => onMoveItem?.(item.id, 'top')}
-                onMoveUp={() => onMoveItem?.(item.id, 'up')}
-                onMoveDown={() => onMoveItem?.(item.id, 'down')}
-                onRemove={canRemove ? () => onRemoveItem?.(item.id) : undefined}
-              />
+                data-testid={`queue-row-${item.id}`}
+                draggable={canDrag}
+                onDragStart={canDrag ? () => setDraggingId(item.id) : undefined}
+                onDragOver={canDrag ? (e) => e.preventDefault() : undefined}
+                onDrop={canDrag ? (e) => { e.preventDefault(); handleDrop(index); } : undefined}
+                onDragEnd={canDrag ? () => setDraggingId(null) : undefined}
+                className={draggingId === item.id ? 'opacity-50' : undefined}
+              >
+                <WebQueueItemCard
+                  item={item}
+                  canReorder={canReorder}
+                  canMoveUp={index > 0}
+                  canMoveDown={index < queue.length - 1}
+                  onMoveTop={() => onMoveItem?.(item.id, 'top')}
+                  onMoveUp={() => onMoveItem?.(item.id, 'up')}
+                  onMoveDown={() => onMoveItem?.(item.id, 'down')}
+                  onRemove={canRemove ? () => handleRemove(item) : undefined}
+                />
+              </div>
             );
           })}
         </div>

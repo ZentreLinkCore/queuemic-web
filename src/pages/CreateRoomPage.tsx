@@ -129,7 +129,12 @@ export const CreateRoomPage: React.FC = () => {
         navigate(`/host/${response.data.room.code}`);
       }
     } catch (err: any) {
-      setError(err?.message || 'Failed to create room. Please verify backend connection.');
+      // No HTTP status means the request never reached the server (offline, DNS, CORS)
+      setError(
+        err?.status
+          ? err?.message || 'Failed to create room. Please verify backend connection.'
+          : 'Unable to create room. Please check your connection.'
+      );
     } finally {
       setLoading(false);
     }

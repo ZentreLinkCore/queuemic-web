@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ChevronLeft, LogIn, AlertCircle, Camera, X } from 'lucide-react';
+import { ChevronLeft, LogIn, AlertCircle, X } from 'lucide-react';
 import { GlassCard } from '../components/common/GlassCard';
 import { NeonButton } from '../components/common/NeonButton';
-import { WebQRScannerModal } from '../components/room/WebQRScannerModal';
 import { useAuthStore } from '../store/useAuthStore';
 import { useRoomStore } from '../store/useRoomStore';
 import { roomApi } from '../api/roomApi';
 import { formatRoomCode } from '../utils/formatting';
+import { validateJoinInput } from '../utils/validation';
 
 const AVATAR_COLORS = [
   '#06B6D4', '#8B5CF6', '#EC4899', '#10B981',
@@ -26,7 +26,6 @@ export const JoinRoomPage: React.FC = () => {
   const [selectedColor, setSelectedColor] = useState(storedColor || '#06B6D4');
   const [loading, setLoading] = useState(false);
   const [rejoining, setRejoining] = useState(false);
-  const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Validate if lastRoom is still active
@@ -52,8 +51,9 @@ export const JoinRoomPage: React.FC = () => {
   const joinRoomWithCode = useCallback(
     async (codeToJoin: string, singerNickname: string) => {
       const cleanCode = formatRoomCode(codeToJoin);
-      if (!cleanCode || cleanCode.length < 4) {
-        setError('Please enter a valid 6-character room code');
+      const validationError = validateJoinInput(cleanCode, singerNickname);
+      if (validationError) {
+        setError(validationError);
         return;
       }
 
@@ -137,14 +137,7 @@ export const JoinRoomPage: React.FC = () => {
 
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const finalNickname = (storedNickname || nickname).trim() || 'Guest Singer';
-    joinRoomWithCode(roomCode, finalNickname);
-  };
-
-  const handleScannedCode = (scannedCode: string) => {
-    setRoomCode(scannedCode);
-    const finalNickname = (storedNickname || nickname).trim() || 'Guest Singer';
-    joinRoomWithCode(scannedCode, finalNickname);
+    joinRoomWithCode(roomCode, (storedNickname || nickname).trim());
   };
 
   return (
@@ -237,7 +230,7 @@ export const JoinRoomPage: React.FC = () => {
             </div>
           )}
 
-          <form onSubmit={handleManualSubmit} className="space-y-4">
+          <form onSubmit={handleManualSubmit} noValidate className="space-y-4">
             {/* If nickname already created, lock it in so user doesn't have to re-create */}
             {storedNickname ? (
               <div className="p-3.5 rounded-xl bg-white/[0.04] border border-[#06B6D4]/30 flex items-center justify-between gap-3">
@@ -343,39 +336,7 @@ export const JoinRoomPage: React.FC = () => {
             </div>
           </form>
         </GlassCard>
-
-        {/* 2. Camera TV QR Scanner Card (Enabled on Mobile View) */}
-        <div className="mt-4">
-          <GlassCard variant="surface" className="p-5 border-white/[0.08] text-center">
-            <div className="w-11 h-11 rounded-2xl bg-[#06B6D4]/10 border border-[#06B6D4]/30 flex items-center justify-center mx-auto mb-2.5">
-              <span className="text-xl">📷</span>
-            </div>
-            <h3 className="text-sm font-bold text-white font-['Outfit'] mb-1">
-              Or Scan TV QR Code
-            </h3>
-            <p className="text-xs text-slate-400 mb-4 max-w-xs mx-auto leading-relaxed">
-              Point your camera at the Host's TV screen to join automatically in one tap without typing.
-            </p>
-            <NeonButton
-              type="button"
-              variant="outline"
-              size="md"
-              onClick={() => setIsScannerOpen(true)}
-              icon={<Camera className="w-4 h-4 text-[#06B6D4]" />}
-              className="w-full border border-[#06B6D4]/30 bg-[#06B6D4]/10 hover:bg-[#06B6D4]/20 text-white font-bold"
-            >
-              Open Camera QR Scanner
-            </NeonButton>
-          </GlassCard>
-        </div>
       </main>
-
-      {/* Camera QR Scanner Viewfinder Modal */}
-      <WebQRScannerModal
-        isOpen={isScannerOpen}
-        onClose={() => setIsScannerOpen(false)}
-        onCodeScanned={handleScannedCode}
-      />
     </div>
   );
 };

@@ -2,6 +2,7 @@ import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 import { API_BASE_URL } from '../api/client';
 import { useAuthStore } from '../store/useAuthStore';
+import { useRoomStore } from '../store/useRoomStore';
 
 function resolveConstructor(imported: any, name: string): any {
   if (typeof imported === 'function') return imported;
@@ -24,6 +25,7 @@ if (typeof globalThis !== 'undefined') {
 
 let echoInstance: any = null;
 let activeConnection = '';
+let echoInitFailed = false;
 
 const echoResetListeners = new Set<() => void>();
 
@@ -69,6 +71,9 @@ export async function fetchBroadcastingConfig(): Promise<any> {
       if (echoInstance && configConnection && configConnection !== activeConnection) {
         disconnectEcho();
         echoResetListeners.forEach((listener) => listener());
+      } else if (echoInitFailed) {
+        echoInitFailed = false;
+        echoResetListeners.forEach((listener) => listener());
       }
       return serverConfig;
     }
@@ -93,7 +98,10 @@ export function getEcho(): any {
   }
 
   try {
-    const appKey = serverConfig?.key || (import.meta as any).env?.VITE_REVERB_APP_KEY || '2n9ub0vuljc3wvqv0tgl';
+    const appKey = serverConfig?.key || (import.meta as any).env?.VITE_REVERB_APP_KEY;
+    if (!appKey) {
+      throw new Error('No Reverb/Pusher app key: broadcasting config unavailable and VITE_REVERB_APP_KEY unset');
+    }
     const isPusher = serverConfig?.broadcaster === 'pusher';
     let connectionOptions: Record<string, any>;
 
@@ -194,7 +202,10 @@ export function getEcho(): any {
 
     return echoInstance;
   } catch (err) {
-    console.warn('⚠️ [Echo Init Error]:', err);
+    console.error('⚠️ [Echo Init Error] realtime unavailable:', err);
+    echoInitFailed = true;
+    useRoomStore.getState().setConnected(false);
+    // Inert stub keeps callers from crashing; the offline banner is shown because isConnected stays false.
     return {
       join: () => ({
         here: () => ({ joining: () => ({ leaving: () => ({ error: () => ({}) }) }) }),

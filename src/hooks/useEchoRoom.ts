@@ -10,6 +10,7 @@ import type { RoomMember, KaraokeQueueItem } from '../types';
 import { queueApi } from '../api/queueApi';
 import { roomApi } from '../api/roomApi';
 import { playbackApi } from '../api/playbackApi';
+import { bindConnectionState } from '../services/connectionState';
 
 const PRESENCE_HEARTBEAT_MS = 60_000;
 
@@ -238,10 +239,10 @@ export function useEchoRoom(
       hasBeenConnected = true;
     };
     connection?.bind('state_change', resyncOnReconnect);
+    const unbindConnectionState = bindConnectionState(connection, setConnected);
 
     // Heartbeat
     const presenceTimer = setInterval(() => {
-      if (typeof document !== 'undefined' && document.visibilityState !== 'visible' && !isHost) return;
       roomApi.heartbeat(normalizedCode).catch((err: any) => {
         if (err?.code === 'ROOM_NOT_FOUND') {
           options?.onRoomClosed?.(err?.message || 'This karaoke room no longer exists or has ended.');
@@ -307,6 +308,7 @@ export function useEchoRoom(
         document.removeEventListener('visibilitychange', handleVisibilityChange);
       }
       connection?.unbind('state_change', resyncOnReconnect);
+      unbindConnectionState();
       echo.leave(`room.${normalizedCode}`);
     };
   }, [roomCode, isHost, echoGeneration, setConnected, addMember, removeMember, setMembers, setQueue, setCurrentPlaying, updateRoomSettings]);

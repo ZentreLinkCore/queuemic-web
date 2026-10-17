@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { Power, Copy, Check, X, Music, Tv } from 'lucide-react';
 import { useRoomStore } from '../store/useRoomStore';
 import { useQueueStore } from '../store/useQueueStore';
@@ -17,6 +17,9 @@ import { roomApi } from '../api/roomApi';
 import { queueApi } from '../api/queueApi';
 import { playbackApi } from '../api/playbackApi';
 import type { RoomMember } from '../types';
+import { runOptimistic } from '../utils/optimistic';
+import { WebConnectionBanner } from '../components/common/WebConnectionBanner';
+import { WebToast } from '../components/common/WebToast';
 
 const HEARTBEAT_INTERVAL_MS = 30000;
 
@@ -39,11 +42,16 @@ const useIsMobile = () => {
 
 export const HostPlayerPage: React.FC = () => {
   const { roomCode } = useParams<{ roomCode: string }>();
+  if (!roomCode) return <Navigate to="/" replace />;
+  return <HostPlayerRoom roomCode={roomCode} />;
+};
+
+const HostPlayerRoom: React.FC<{ roomCode: string }> = ({ roomCode }) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
   const { currentRoom, members, leaveRoom } = useRoomStore();
-  const { currentPlaying, queue, moveItem, removeFromQueue } = useQueueStore();
+  const { currentPlaying, queue, moveItem, removeFromQueue, setQueue, reorderQueue } = useQueueStore();
   const {
     state: playbackState,
     currentTimeSeconds,
@@ -64,6 +72,7 @@ export const HostPlayerPage: React.FC = () => {
   const [isQueueDrawerOpen, setIsQueueDrawerOpen] = useState(false);
   const [seekTarget, setSeekTarget] = useState<number | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Set duration immediately when current track is loaded
   useEffect(() => {
@@ -102,10 +111,6 @@ export const HostPlayerPage: React.FC = () => {
     return () => clearInterval(interval);
   }, [roomCode, currentPlaying?.id, playbackState]);
 
-  if (!roomCode) {
-    navigate('/');
-    return null;
-  }
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(roomCode.toUpperCase());
@@ -116,19 +121,29 @@ export const HostPlayerPage: React.FC = () => {
   const handlePlayPause = async () => {
     const nextState = playbackState === 'playing' ? 'paused' : 'playing';
     const position = Math.max(0, Math.round(getLivePlaybackPosition() * 100) / 100);
-    setPlaybackState(nextState);
-    setCurrentTime(position);
-    setSyncAnchor({
-      queueItemId: currentPlaying?.id ?? null,
-      state: nextState,
-      positionSeconds: position,
-      receivedAtMs: Date.now(),
-    });
-    try {
-      await playbackApi.updatePlaybackState(roomCode, nextState, position, currentPlaying?.id);
-    } catch (err) {
-      console.warn('Playback state error:', err);
-    }
+    const prev = {
+      state: playbackState,
+      time: currentTimeSeconds,
+      anchor: syncAnchor,
+    };
+    await runOptimistic(
+      () => {
+        setPlaybackState(nextState);
+        setCurrentTime(position);
+        setSyncAnchor({
+          queueItemId: currentPlaying?.id ?? null,
+          state: nextState,
+          positionSeconds: position,
+          receivedAtMs: Date.now(),
+        });
+      },
+      () => {
+        setPlaybackState(prev.state);
+        setCurrentTime(prev.time);
+        setSyncAnchor(prev.anchor);
+      },
+      () => playbackApi.updatePlaybackState(roomCode, nextState, position, currentPlaying?.id)
+    );
   };
 
   const handleSkip = async () => {
@@ -163,22 +178,41 @@ export const HostPlayerPage: React.FC = () => {
     }
   };
 
-  const handleMoveItem = async (queueId: number, direction: 'up' | 'down' | 'top' | 'bottom') => {
-    moveItem(queueId, direction);
+  const restoreQueue = async () => {
     try {
-      await queueApi.moveQueueItem(roomCode, queueId, { direction });
+      const res = await queueApi.getQueue(roomCode);
+      if (res.success && Array.isArray(res.data)) {
+        const currentId = useQueueStore.getState().currentPlaying?.id;
+        setQueue(res.data.filter((item) => item.id !== currentId));
+      }
     } catch (err) {
-      console.warn('Move queue error:', err);
+      console.warn('Queue resync error:', err);
     }
   };
 
+  const handleMoveItem = async (queueId: number, direction: 'up' | 'down' | 'top' | 'bottom') => {
+    await runOptimistic(
+      () => moveItem(queueId, direction),
+      restoreQueue,
+      () => queueApi.moveQueueItem(roomCode, queueId, { direction })
+    );
+  };
+
+  const handleReorderItem = async (queueId: number, targetPosition: number) => {
+    const fromIndex = queue.findIndex((q) => q.id === queueId);
+    await runOptimistic(
+      () => reorderQueue(fromIndex, targetPosition - 1),
+      restoreQueue,
+      () => queueApi.moveQueueItem(roomCode, queueId, { target_position: targetPosition })
+    );
+  };
+
   const handleRemoveItem = async (queueId: number) => {
-    removeFromQueue(queueId);
-    try {
-      await queueApi.removeFromQueue(roomCode, queueId);
-    } catch (err) {
-      console.warn('Remove queue error:', err);
-    }
+    await runOptimistic(
+      () => removeFromQueue(queueId),
+      restoreQueue,
+      () => queueApi.removeFromQueue(roomCode, queueId)
+    );
   };
 
   const handleTransferHost = async (targetMember: RoomMember) => {
@@ -342,6 +376,7 @@ export const HostPlayerPage: React.FC = () => {
           </button>
         </div>
       </header>
+      <WebConnectionBanner />
 
       {/* Mobile View (< lg): Fixed Video & Controls at top, scrollable Queue Manager below */}
       {isMobile && !isFullscreen ? (
@@ -409,6 +444,7 @@ export const HostPlayerPage: React.FC = () => {
               title="Host Queue Manager"
               subtitle="Reorder, skip, or remove songs in queue"
               onMoveItem={handleMoveItem}
+              onReorder={handleReorderItem}
               onRemoveItem={handleRemoveItem}
               onOpenSearch={() => setIsSearchModalVisible(true)}
             />
@@ -490,6 +526,7 @@ export const HostPlayerPage: React.FC = () => {
                 title="Host Queue Manager"
                 subtitle="Reorder, skip, or remove songs in queue"
                 onMoveItem={handleMoveItem}
+                onReorder={handleReorderItem}
                 onRemoveItem={handleRemoveItem}
                 onOpenSearch={() => setIsSearchModalVisible(true)}
                 className="flex-1 min-h-0 h-full"
@@ -522,6 +559,7 @@ export const HostPlayerPage: React.FC = () => {
                 canReorder={true}
                 isHost={true}
                 onMoveItem={handleMoveItem}
+                onReorder={handleReorderItem}
                 onRemoveItem={handleRemoveItem}
                 onOpenSearch={() => {
                   setIsQueueDrawerOpen(false);
@@ -562,7 +600,9 @@ export const HostPlayerPage: React.FC = () => {
         visible={isSearchModalVisible}
         roomCode={roomCode}
         onClose={() => setIsSearchModalVisible(false)}
+        onQueued={(title, singer) => setToastMessage(`Added "${title}" for ${singer}`)}
       />
+      {toastMessage && <WebToast message={toastMessage} onDone={() => setToastMessage(null)} />}
     </div>
   );
 };
