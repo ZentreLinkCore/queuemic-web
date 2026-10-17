@@ -1,75 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mic2, Radio, QrCode, Music, ArrowRight, Sparkles } from 'lucide-react';
+import { Mic2, Radio, QrCode, Music, Sparkles } from 'lucide-react';
 import { GlassCard } from '../components/common/GlassCard';
 import { NeonButton } from '../components/common/NeonButton';
 import { WebNicknameModal } from '../components/common/WebNicknameModal';
-import { useRoomStore } from '../store/useRoomStore';
 import { useAuthStore } from '../store/useAuthStore';
-import { roomApi } from '../api/roomApi';
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
-  const { lastRoom, setLastRoom, setCurrentRoom } = useRoomStore();
   const { nickname, avatarColor } = useAuthStore();
-  const [rejoining, setRejoining] = useState(false);
   const [isNicknameModalOpen, setIsNicknameModalOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<'create' | 'join' | null>(null);
-
-  // Check if lastRoom is still active on the server
-  useEffect(() => {
-    if (lastRoom?.code) {
-      roomApi
-        .getRoomDetails(lastRoom.code)
-        .then((res) => {
-          if (!res.success || !res.data || res.data.status !== 'active') {
-            setLastRoom(null);
-          }
-        })
-        .catch(() => setLastRoom(null));
-    }
-  }, [lastRoom?.code, setLastRoom]);
-
-  const handleRejoin = async () => {
-    if (!lastRoom) return;
-    setRejoining(true);
-    try {
-      const singerNickname = lastRoom.nickname || nickname || 'Singer';
-      const response = await roomApi.joinRoom({
-        roomCode: lastRoom.code,
-        nickname: singerNickname,
-        deviceUuid: useAuthStore.getState().deviceUuid,
-      });
-
-      if (response.success && response.data) {
-        useAuthStore.getState().setAuth({
-          token: response.data.token,
-          memberId: response.data.member.id,
-          nickname: response.data.member.nickname,
-          avatarColor: response.data.member.avatarColor || '#06B6D4',
-          role: 'guest',
-        });
-        setCurrentRoom(response.data.room);
-        setLastRoom({
-          code: response.data.room.code,
-          name: response.data.room.name,
-          nickname: response.data.member.nickname,
-        });
-        navigate(`/room/${response.data.room.code}`);
-      } else {
-        navigate(`/room/${lastRoom.code}`);
-      }
-    } catch (err: any) {
-      console.warn('Rejoin failed, navigating directly or clearing stale room:', err);
-      if (err?.code === 'ROOM_NOT_FOUND' || err?.status === 404) {
-        setLastRoom(null);
-      } else {
-        navigate(`/room/${lastRoom.code}`);
-      }
-    } finally {
-      setRejoining(false);
-    }
-  };
 
   const handleHostPress = () => {
     if (!nickname || !nickname.trim()) {
@@ -193,59 +134,6 @@ export const HomePage: React.FC = () => {
               Join as Singer
             </NeonButton>
           </div>
-
-          {/* Previous Active Room Rejoin Card */}
-          {lastRoom && (
-            <div className="w-full max-w-sm mt-2 animate-fade-in">
-              <GlassCard
-                variant="elevated"
-                glow="none"
-                className="p-3.5 sm:p-4 border border-[#06B6D4]/30 bg-gradient-to-r from-[#06B6D4]/10 via-[#12131C] to-[#8B5CF6]/10 text-left"
-              >
-                <div className="flex items-center justify-between gap-3 mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="relative flex h-2.5 w-2.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                    </span>
-                    <span className="text-[11px] font-black uppercase tracking-wider text-emerald-400 font-['Outfit']">
-                      Previous Room Active
-                    </span>
-                  </div>
-                  {lastRoom.nickname && (
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-slate-300">
-                      🎤 {lastRoom.nickname}
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <h4 className="text-sm font-bold text-white truncate font-['Outfit']">
-                      {lastRoom.name || 'QueueMic Lounge'}
-                    </h4>
-                    <p className="text-xs text-slate-300 font-mono flex items-center gap-1.5 mt-0.5">
-                      <span>Code:</span>
-                      <span className="text-[#06B6D4] font-bold text-sm tracking-wider">
-                        {lastRoom.code}
-                      </span>
-                    </p>
-                  </div>
-
-                  <NeonButton
-                    size="sm"
-                    variant="primary"
-                    onClick={handleRejoin}
-                    loading={rejoining}
-                    icon={<ArrowRight className="w-3.5 h-3.5" />}
-                    className="shrink-0 px-3.5 py-1.5 font-bold text-xs"
-                  >
-                    ⚡️ Rejoin
-                  </NeonButton>
-                </div>
-              </GlassCard>
-            </div>
-          )}
 
           {/* Quick Party Pillar Badges: Fills the lower empty space, clean without shadows */}
           <div className="w-full max-w-sm grid grid-cols-3 gap-2 mt-4 pt-1 animate-fade-in">

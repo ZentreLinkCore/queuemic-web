@@ -58,26 +58,28 @@ export const CreateRoomPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0D0E15] text-white flex flex-col items-center">
+    <div className="min-h-screen bg-[#0D0E15] text-white flex flex-col">
       {/* Top Mobile HeaderBar */}
-      <header className="w-full max-w-lg flex items-center gap-3 py-3 px-4 border-b border-white/[0.08] shrink-0 bg-[#0D0E15]/95 backdrop-blur-md sticky top-0 z-30">
-        <button
-          type="button"
-          onClick={() => navigate('/')}
-          className="w-9 h-9 rounded-xl bg-white/[0.05] border border-white/10 hover:bg-white/10 text-slate-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
-          aria-label="Back to Home"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <div>
-          <h1 className="text-base font-bold text-white font-['Outfit']">Host a QueueMic Room</h1>
-          <p className="text-[11px] text-slate-400">Configure party & launch screen</p>
+      <header className="w-full border-b border-white/[0.08] shrink-0 bg-[#0D0E15] sticky top-0 z-30">
+        <div className="w-full max-w-lg mx-auto flex items-center gap-3 py-3 px-4">
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="w-9 h-9 rounded-xl bg-white/[0.05] border border-white/10 hover:bg-white/10 text-slate-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+            aria-label="Back to Home"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <div className="min-w-0">
+            <h1 className="text-base font-bold text-white font-['Outfit'] truncate">Host a QueueMic Room</h1>
+            <p className="text-[11px] text-slate-400">Configure party & launch screen</p>
+          </div>
         </div>
       </header>
 
-      {/* Main Content: Flows naturally from the top without awkward vertical centering */}
-      <main className="w-full max-w-lg p-4 sm:p-6 flex-1 flex flex-col">
-        <GlassCard variant="surface" glow="primary" className="p-5 sm:p-7">
+      {/* Main Content: Flows naturally from the top without vertical centering */}
+      <main className="w-full max-w-lg mx-auto p-4 sm:p-6 flex-1 flex flex-col justify-start">
+        <GlassCard variant="surface" glow="primary" className="p-5 sm:p-7 w-full">
           <div className="flex items-center gap-3 mb-5">
             <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#8B5CF6] to-[#EC4899] flex items-center justify-center border border-white/10 shrink-0">
               <Tv className="w-5 h-5 text-white" />
