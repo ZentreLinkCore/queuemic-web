@@ -61,6 +61,7 @@ export const CreateRoomPage: React.FC = () => {
     <div className="min-h-screen bg-[#0D0E15] text-white flex flex-col items-center justify-center p-4 sm:p-6">
       <div className="w-full max-w-md">
         <button
+          type="button"
           onClick={() => navigate('/')}
           className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors mb-6 cursor-pointer"
         >
@@ -73,20 +74,29 @@ export const CreateRoomPage: React.FC = () => {
               <Tv className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-black font-['Outfit'] text-white">Create Party Room</h1>
-              <p className="text-xs text-slate-400">Host video on your screen and invite singers</p>
+              <h1 className="text-xl font-black font-['Outfit'] text-white">Room Setup</h1>
+              <p className="text-xs text-slate-400">Configure your party room and start queuing music.</p>
             </div>
           </div>
 
           {error && (
-            <div className="mb-5 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{error}</span>
+            <div className="mb-5 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span className="truncate">{error}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setError(null)}
+                className="text-slate-400 hover:text-white text-xs px-1 cursor-pointer"
+              >
+                ✕
+              </button>
             </div>
           )}
 
           <form onSubmit={handleCreate} className="space-y-4">
-            {/* If nickname already created, lock it in so user doesn't have to re-create */}
+            {/* Host Profile Info */}
             {storedNickname ? (
               <div className="p-3.5 rounded-xl bg-white/[0.04] border border-[#8B5CF6]/30 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
@@ -106,7 +116,7 @@ export const CreateRoomPage: React.FC = () => {
                   </div>
                 </div>
                 <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                  Host Profile
+                  👑 Host Profile
                 </span>
               </div>
             ) : (
@@ -127,15 +137,23 @@ export const CreateRoomPage: React.FC = () => {
 
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
-                Room Name (Optional)
+                QueueMic Room Name
               </label>
               <input
                 type="text"
                 value={roomName}
                 onChange={(e) => setRoomName(e.target.value)}
-                placeholder={`e.g. ${storedNickname || 'Saturday Night'} Lounge`}
+                placeholder={`e.g. ${storedNickname || 'Friday Night'} Lounge`}
                 className="w-full bg-[#1C1E2D] border border-white/10 focus:border-[#8B5CF6] rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-[#8B5CF6] transition-all"
               />
+            </div>
+
+            {/* Host Role Tip matching mobapp */}
+            <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.08] flex items-start gap-2.5 text-xs text-slate-400 leading-relaxed">
+              <span className="text-base shrink-0">👑</span>
+              <span>
+                As the Host, this device connects to the TV / sound system and controls live video lyrics, queue order, and playback controls.
+              </span>
             </div>
 
             {!storedNickname && (
@@ -162,15 +180,15 @@ export const CreateRoomPage: React.FC = () => {
               </div>
             )}
 
-            <div className="pt-4">
+            <div className="pt-2">
               <NeonButton
                 type="submit"
                 variant="primary"
                 size="lg"
                 loading={loading}
-                className="w-full"
+                className="w-full font-bold"
               >
-                Launch Room Stage 🎤
+                Launch QueueMic Room 🚀
               </NeonButton>
             </div>
           </form>

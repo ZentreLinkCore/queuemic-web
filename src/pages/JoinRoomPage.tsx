@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, LogIn, AlertCircle } from 'lucide-react';
+import { ArrowLeft, LogIn, AlertCircle, Camera, X } from 'lucide-react';
 import { GlassCard } from '../components/common/GlassCard';
 import { NeonButton } from '../components/common/NeonButton';
+import { WebQRScannerModal } from '../components/room/WebQRScannerModal';
 import { useAuthStore } from '../store/useAuthStore';
 import { useRoomStore } from '../store/useRoomStore';
 import { roomApi } from '../api/roomApi';
@@ -25,6 +26,7 @@ export const JoinRoomPage: React.FC = () => {
   const [selectedColor, setSelectedColor] = useState(storedColor || '#06B6D4');
   const [loading, setLoading] = useState(false);
   const [rejoining, setRejoining] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Validate if lastRoom is still active
@@ -46,6 +48,51 @@ export const JoinRoomPage: React.FC = () => {
       setRoomCode(formatRoomCode(codeFromUrl));
     }
   }, [codeFromUrl]);
+
+  const joinRoomWithCode = useCallback(
+    async (codeToJoin: string, singerNickname: string) => {
+      const cleanCode = formatRoomCode(codeToJoin);
+      if (!cleanCode || cleanCode.length < 4) {
+        setError('Please enter a valid 6-character room code');
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await roomApi.joinRoom({
+          roomCode: cleanCode,
+          nickname: singerNickname,
+          deviceUuid: useAuthStore.getState().deviceUuid,
+        });
+
+        if (response.success && response.data) {
+          setAuth({
+            token: response.data.token,
+            memberId: response.data.member.id,
+            nickname: response.data.member.nickname,
+            avatarColor: selectedColor,
+            role: 'guest',
+          });
+          useAuthStore.getState().setNickname(singerNickname, selectedColor);
+          setCurrentRoom(response.data.room);
+          setLastRoom({
+            code: response.data.room.code,
+            name: response.data.room.name,
+            nickname: response.data.member.nickname,
+          });
+
+          navigate(`/room/${response.data.room.code}`);
+        }
+      } catch (err: any) {
+        setError(err?.message || 'Room not found or session closed. Check the code on the Host screen.');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [navigate, selectedColor, setAuth, setCurrentRoom, setLastRoom]
+  );
 
   const handleRejoin = async () => {
     if (!lastRoom) return;
@@ -88,55 +135,23 @@ export const JoinRoomPage: React.FC = () => {
     }
   };
 
-  const handleJoin = async (e: React.FormEvent) => {
+  const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanCode = formatRoomCode(roomCode);
-    if (!cleanCode || cleanCode.length < 4) {
-      setError('Please enter a valid room code (e.g. 6 characters)');
-      return;
-    }
-
     const finalNickname = (storedNickname || nickname).trim() || 'Guest Singer';
+    joinRoomWithCode(roomCode, finalNickname);
+  };
 
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await roomApi.joinRoom({
-        roomCode: cleanCode,
-        nickname: finalNickname,
-        deviceUuid: useAuthStore.getState().deviceUuid,
-      });
-
-      if (response.success && response.data) {
-        setAuth({
-          token: response.data.token,
-          memberId: response.data.member.id,
-          nickname: response.data.member.nickname,
-          avatarColor: selectedColor,
-          role: 'guest',
-        });
-        useAuthStore.getState().setNickname(finalNickname, selectedColor);
-        setCurrentRoom(response.data.room);
-        setLastRoom({
-          code: response.data.room.code,
-          name: response.data.room.name,
-          nickname: response.data.member.nickname,
-        });
-
-        navigate(`/room/${response.data.room.code}`);
-      }
-    } catch (err: any) {
-      setError(err?.message || 'Room not found or session closed. Check the code on the Host screen.');
-    } finally {
-      setLoading(false);
-    }
+  const handleScannedCode = (scannedCode: string) => {
+    setRoomCode(scannedCode);
+    const finalNickname = (storedNickname || nickname).trim() || 'Guest Singer';
+    joinRoomWithCode(scannedCode, finalNickname);
   };
 
   return (
     <div className="min-h-screen bg-[#0D0E15] text-white flex flex-col items-center justify-center p-4 sm:p-6">
       <div className="w-full max-w-md">
         <button
+          type="button"
           onClick={() => navigate('/')}
           className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors mb-6 cursor-pointer"
         >
@@ -183,6 +198,7 @@ export const JoinRoomPage: React.FC = () => {
           </GlassCard>
         )}
 
+        {/* 1. Manual 6-Digit Code Entry Card */}
         <GlassCard variant="surface" glow="cyan" className="p-6 sm:p-8">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#06B6D4] to-[#8B5CF6] flex items-center justify-center border border-white/10">
@@ -195,13 +211,22 @@ export const JoinRoomPage: React.FC = () => {
           </div>
 
           {error && (
-            <div className="mb-5 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{error}</span>
+            <div className="mb-5 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span className="truncate">{error}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setError(null)}
+                className="text-slate-400 hover:text-white text-xs px-1 cursor-pointer"
+              >
+                ✕
+              </button>
             </div>
           )}
 
-          <form onSubmit={handleJoin} className="space-y-4">
+          <form onSubmit={handleManualSubmit} className="space-y-4">
             {/* If nickname already created, lock it in so user doesn't have to re-create */}
             {storedNickname ? (
               <div className="p-3.5 rounded-xl bg-white/[0.04] border border-[#06B6D4]/30 flex items-center justify-between gap-3">
@@ -242,13 +267,27 @@ export const JoinRoomPage: React.FC = () => {
             )}
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
-                Room Code
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                  Room Code
+                </label>
+                {roomCode.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setRoomCode('')}
+                    className="text-[11px] text-slate-400 hover:text-white font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                  >
+                    <X className="w-3 h-3" /> Clear Code
+                  </button>
+                )}
+              </div>
               <input
                 type="text"
                 value={roomCode}
-                onChange={(e) => setRoomCode(formatRoomCode(e.target.value))}
+                onChange={(e) => {
+                  setRoomCode(formatRoomCode(e.target.value));
+                  if (error) setError(null);
+                }}
                 placeholder="e.g. ABC123"
                 maxLength={8}
                 required
@@ -280,20 +319,52 @@ export const JoinRoomPage: React.FC = () => {
               </div>
             )}
 
-            <div className="pt-4">
+            <div className="pt-2">
               <NeonButton
                 type="submit"
                 variant="secondary"
                 size="lg"
                 loading={loading}
-                className="w-full"
+                className="w-full font-bold"
               >
-                Join Party Stage 🎶
+                Join QueueMic Room 🎤
               </NeonButton>
             </div>
           </form>
         </GlassCard>
+
+        {/* 2. Camera TV QR Scanner Card (Enabled on Mobile View) */}
+        <div className="mt-4">
+          <GlassCard variant="surface" className="p-5 border-white/[0.08] text-center">
+            <div className="w-12 h-12 rounded-2xl bg-[#06B6D4]/10 border border-[#06B6D4]/30 flex items-center justify-center mx-auto mb-2.5">
+              <span className="text-2xl">📷</span>
+            </div>
+            <h3 className="text-sm font-bold text-white font-['Outfit'] mb-1">
+              Or Scan TV QR Code
+            </h3>
+            <p className="text-xs text-slate-400 mb-4 max-w-xs mx-auto leading-relaxed">
+              Point your camera at the Host's TV screen to join automatically in one tap without typing.
+            </p>
+            <NeonButton
+              type="button"
+              variant="outline"
+              size="md"
+              onClick={() => setIsScannerOpen(true)}
+              icon={<Camera className="w-4 h-4 text-[#06B6D4]" />}
+              className="w-full border border-[#06B6D4]/30 bg-[#06B6D4]/10 hover:bg-[#06B6D4]/20 text-[#22D3EE] font-bold"
+            >
+              ⚡️ Open QR Camera Scanner
+            </NeonButton>
+          </GlassCard>
+        </div>
       </div>
+
+      {/* Camera QR Scanner Viewfinder Modal */}
+      <WebQRScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onCodeScanned={handleScannedCode}
+      />
     </div>
   );
 };

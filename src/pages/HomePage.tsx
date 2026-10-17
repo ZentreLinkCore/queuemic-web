@@ -327,9 +327,8 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* Footer */}
-      <footer className="w-full max-w-5xl py-6 border-t border-white/[0.08] text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2 px-4 sm:px-6">
+      <footer className="w-full max-w-5xl py-6 border-t border-white/[0.08] text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-center gap-2 px-4 sm:px-6">
         <p>© 2026 QueueMic. Realtime Karaoke Architecture.</p>
-        <p className="font-mono text-[11px] text-slate-600">Laravel 13 • Reverb • Vite React 19</p>
       </footer>
     </div>
   );
