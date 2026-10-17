@@ -107,7 +107,7 @@ export const HomePage: React.FC = () => {
         {/* Top Navbar: Enter Code removed as requested */}
         <header className="w-full flex items-center justify-between py-2 sm:py-4 border-b border-white/[0.08] shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#8B5CF6] to-[#EC4899] flex items-center justify-center shadow-sm border border-white/10">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#8B5CF6] to-[#EC4899] flex items-center justify-center border border-white/10">
               <Mic2 className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -123,13 +123,12 @@ export const HomePage: React.FC = () => {
 
         {/* Singer Profile Badge matching mobapp: Fills the first empty space */}
         <div className="w-full max-w-sm mt-3 mb-1 animate-fade-in">
-          <div className="px-3.5 py-2.5 rounded-2xl bg-white/[0.04] border border-white/10 hover:border-white/20 flex items-center justify-between gap-3 shadow-md transition-all">
+          <div className="px-3.5 py-2.5 rounded-2xl bg-white/[0.04] border border-white/10 hover:border-white/20 flex items-center justify-between gap-3 transition-all">
             <div className="flex items-center gap-2.5 min-w-0">
               <div
-                className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-white text-sm shadow-md ring-2 ring-white/15 shrink-0"
+                className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-white text-sm ring-1 ring-white/15 shrink-0"
                 style={{
                   backgroundColor: avatarColor || '#8B5CF6',
-                  boxShadow: `0 0 12px ${(avatarColor || '#8B5CF6')}60`,
                 }}
               >
                 {nickname ? nickname.charAt(0).toUpperCase() : '🎤'}
@@ -155,7 +154,7 @@ export const HomePage: React.FC = () => {
 
         {/* Hero Section: Centered */}
         <main className="w-full max-w-2xl flex flex-col items-center text-center my-auto py-3 sm:py-6">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.04] border border-white/10 text-xs text-slate-300 mb-4 sm:mb-5 shadow-sm">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.04] border border-white/10 text-xs text-slate-300 mb-4 sm:mb-5">
             <Sparkles className="w-3.5 h-3.5 text-[#EC4899]" />
             <span>Real-time collaborative karaoke party</span>
           </div>
@@ -172,14 +171,14 @@ export const HomePage: React.FC = () => {
             with sub-second synchronization and zero latency drift.
           </p>
 
-          {/* Action Buttons: Themed with mobapp icons and colors */}
+          {/* Action Buttons: Clean & sleek matching mobapp without heavy blur shadows */}
           <div className="flex flex-col gap-3.5 w-full max-w-sm mb-2">
             <NeonButton
               size="lg"
               variant="primary"
               onClick={handleHostPress}
               icon={<span className="text-xl">👑</span>}
-              className="w-full py-3.5 text-sm sm:text-base font-bold shadow-lg shadow-[#8B5CF6]/30 flex items-center justify-center gap-2"
+              className="w-full py-3.5 text-sm sm:text-base font-bold flex items-center justify-center gap-2"
             >
               Host a Party Room
             </NeonButton>
@@ -189,7 +188,7 @@ export const HomePage: React.FC = () => {
               variant="outline"
               onClick={handleJoinPress}
               icon={<span className="text-xl">📱</span>}
-              className="w-full py-3.5 text-sm sm:text-base font-bold border-[#06B6D4]/40 bg-[#06B6D4]/10 hover:bg-[#06B6D4]/20 text-[#22D3EE] shadow-[0_0_15px_rgba(6,182,212,0.25)] flex items-center justify-center gap-2"
+              className="w-full py-3.5 text-sm sm:text-base font-bold border border-[#06B6D4]/30 bg-[#06B6D4]/10 hover:bg-[#06B6D4]/15 text-[#22D3EE] flex items-center justify-center gap-2"
             >
               Join as Singer
             </NeonButton>
@@ -200,8 +199,8 @@ export const HomePage: React.FC = () => {
             <div className="w-full max-w-sm mt-2 animate-fade-in">
               <GlassCard
                 variant="elevated"
-                glow="cyan"
-                className="p-3.5 sm:p-4 border-[#06B6D4]/40 bg-gradient-to-r from-[#06B6D4]/15 via-[#12131C] to-[#8B5CF6]/15 text-left shadow-lg"
+                glow="none"
+                className="p-3.5 sm:p-4 border border-[#06B6D4]/30 bg-gradient-to-r from-[#06B6D4]/10 via-[#12131C] to-[#8B5CF6]/10 text-left"
               >
                 <div className="flex items-center justify-between gap-3 mb-2">
                   <div className="flex items-center gap-2">
@@ -239,7 +238,7 @@ export const HomePage: React.FC = () => {
                     onClick={handleRejoin}
                     loading={rejoining}
                     icon={<ArrowRight className="w-3.5 h-3.5" />}
-                    className="shrink-0 px-3.5 py-1.5 font-bold text-xs shadow-[0_0_12px_rgba(6,182,212,0.35)]"
+                    className="shrink-0 px-3.5 py-1.5 font-bold text-xs"
                   >
                     ⚡️ Rejoin
                   </NeonButton>
@@ -248,21 +247,21 @@ export const HomePage: React.FC = () => {
             </div>
           )}
 
-          {/* Quick Party Pillar Badges: Fills the lower empty space, matching mobapp theme */}
+          {/* Quick Party Pillar Badges: Fills the lower empty space, clean without shadows */}
           <div className="w-full max-w-sm grid grid-cols-3 gap-2 mt-4 pt-1 animate-fade-in">
-            <div className="p-2.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-center flex flex-col items-center hover:border-[#8B5CF6]/30 transition-all shadow-sm">
+            <div className="p-2.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-center flex flex-col items-center hover:border-[#8B5CF6]/30 transition-all">
               <span className="text-base mb-1">👑</span>
               <span className="text-[11px] font-bold text-white font-['Outfit']">Host TV</span>
               <span className="text-[9px] text-[#A78BFA] font-medium">Big Screen</span>
             </div>
 
-            <div className="p-2.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-center flex flex-col items-center hover:border-[#06B6D4]/30 transition-all shadow-sm">
+            <div className="p-2.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-center flex flex-col items-center hover:border-[#06B6D4]/30 transition-all">
               <span className="text-base mb-1">📱</span>
               <span className="text-[11px] font-bold text-white font-['Outfit']">Phone Mic</span>
               <span className="text-[9px] text-[#06B6D4] font-medium">Remote Queue</span>
             </div>
 
-            <div className="p-2.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-center flex flex-col items-center hover:border-emerald-500/30 transition-all shadow-sm">
+            <div className="p-2.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-center flex flex-col items-center hover:border-emerald-500/30 transition-all">
               <span className="text-base mb-1">⚡️</span>
               <span className="text-[11px] font-bold text-white font-['Outfit']">Real-time</span>
               <span className="text-[9px] text-emerald-400 font-medium">Zero Drift</span>

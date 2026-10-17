@@ -22,9 +22,9 @@ export const GlassCard: React.FC<GlassCardProps> = ({
 
   const borderStyles = {
     none: 'border-white/[0.08]',
-    primary: 'border-[#8B5CF6]/40 shadow-sm',
-    pink: 'border-[#EC4899]/40 shadow-sm',
-    cyan: 'border-[#06B6D4]/40 shadow-sm',
+    primary: 'border-[#8B5CF6]/40',
+    pink: 'border-[#EC4899]/40',
+    cyan: 'border-[#06B6D4]/40',
   }[glow];
 
   return (

@@ -89,7 +89,7 @@ export const WebNicknameModal: React.FC<WebNicknameModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in select-none">
       <div className="w-full max-w-sm relative">
-        <GlassCard variant="elevated" glow="primary" className="p-6 relative border-white/10 shadow-2xl">
+        <GlassCard variant="elevated" glow="primary" className="p-6 relative border-white/10">
           {/* Close button */}
           <button
             type="button"
@@ -103,10 +103,9 @@ export const WebNicknameModal: React.FC<WebNicknameModalProps> = ({
           {/* Avatar Preview */}
           <div className="flex flex-col items-center text-center mb-5">
             <div
-              className="w-16 h-16 rounded-full flex items-center justify-center font-black text-white text-2xl shadow-xl ring-4 ring-white/10 mb-3 transition-transform"
+              className="w-16 h-16 rounded-full flex items-center justify-center font-black text-white text-2xl ring-2 ring-white/10 mb-3 transition-transform"
               style={{
                 backgroundColor: selectedColor,
-                boxShadow: `0 0 24px ${selectedColor}60`,
               }}
             >
               {initial}

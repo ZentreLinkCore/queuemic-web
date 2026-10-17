@@ -69,7 +69,7 @@ export const CreateRoomPage: React.FC = () => {
 
         <GlassCard variant="surface" glow="primary" className="p-6 sm:p-8">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#8B5CF6] to-[#EC4899] flex items-center justify-center shadow-sm border border-white/10">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#8B5CF6] to-[#EC4899] flex items-center justify-center border border-white/10">
               <Tv className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -91,7 +91,7 @@ export const CreateRoomPage: React.FC = () => {
               <div className="p-3.5 rounded-xl bg-white/[0.04] border border-[#8B5CF6]/30 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-base shadow-sm ring-2 ring-white/20"
+                    className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-base ring-1 ring-white/20"
                     style={{ backgroundColor: selectedColor || storedColor || '#8B5CF6' }}
                   >
                     {storedNickname.charAt(0).toUpperCase()}

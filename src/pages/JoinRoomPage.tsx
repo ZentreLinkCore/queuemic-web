@@ -147,8 +147,8 @@ export const JoinRoomPage: React.FC = () => {
         {lastRoom && (
           <GlassCard
             variant="elevated"
-            glow="cyan"
-            className="p-4 sm:p-5 mb-5 border-[#06B6D4]/40 bg-gradient-to-r from-[#06B6D4]/15 via-[#12131C] to-[#8B5CF6]/15 text-left shadow-lg animate-fade-in"
+            glow="none"
+            className="p-4 sm:p-5 mb-5 border border-[#06B6D4]/30 bg-gradient-to-r from-[#06B6D4]/10 via-[#12131C] to-[#8B5CF6]/10 text-left animate-fade-in"
           >
             <div className="flex items-center justify-between gap-2 mb-2">
               <span className="text-[11px] font-black uppercase tracking-wider text-emerald-400 font-['Outfit'] flex items-center gap-1.5">
@@ -175,7 +175,7 @@ export const JoinRoomPage: React.FC = () => {
                 variant="primary"
                 onClick={handleRejoin}
                 loading={rejoining}
-                className="shrink-0 px-3.5 py-1.5 font-bold text-xs shadow-[0_0_12px_rgba(6,182,212,0.3)]"
+                className="shrink-0 px-3.5 py-1.5 font-bold text-xs"
               >
                 ⚡️ Rejoin Room
               </NeonButton>
@@ -185,7 +185,7 @@ export const JoinRoomPage: React.FC = () => {
 
         <GlassCard variant="surface" glow="cyan" className="p-6 sm:p-8">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#06B6D4] to-[#8B5CF6] flex items-center justify-center shadow-sm border border-white/10">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#06B6D4] to-[#8B5CF6] flex items-center justify-center border border-white/10">
               <LogIn className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -207,7 +207,7 @@ export const JoinRoomPage: React.FC = () => {
               <div className="p-3.5 rounded-xl bg-white/[0.04] border border-[#06B6D4]/30 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-base shadow-sm ring-2 ring-white/20"
+                    className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-base ring-1 ring-white/20"
                     style={{ backgroundColor: selectedColor || storedColor || '#06B6D4' }}
                   >
                     {storedNickname.charAt(0).toUpperCase()}

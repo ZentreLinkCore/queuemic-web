@@ -27,9 +27,9 @@ export const NeonButton: React.FC<NeonButtonProps> = ({
 
   const variantStyles = {
     primary:
-      'bg-gradient-to-r from-[#8B5CF6] to-[#EC4899] text-white shadow-sm hover:brightness-105 active:scale-[0.98]',
+      'bg-gradient-to-r from-[#8B5CF6] to-[#EC4899] text-white hover:brightness-105 active:scale-[0.98]',
     secondary:
-      'bg-[#06B6D4] text-white shadow-sm hover:brightness-105 active:scale-[0.98]',
+      'bg-[#06B6D4] text-white hover:brightness-105 active:scale-[0.98]',
     outline:
       'border border-white/15 hover:border-white/30 text-slate-200 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] active:scale-[0.98]',
     danger:
