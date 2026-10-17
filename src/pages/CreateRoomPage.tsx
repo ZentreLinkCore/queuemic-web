@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Tv, AlertCircle, ArrowRight, PowerOff, Loader2 } from 'lucide-react';
+import { ChevronLeft, Tv, AlertCircle, Power, Loader2 } from 'lucide-react';
 import { GlassCard } from '../components/common/GlassCard';
 import { NeonButton } from '../components/common/NeonButton';
 import { useAuthStore } from '../store/useAuthStore';
@@ -81,6 +81,11 @@ export const CreateRoomPage: React.FC = () => {
 
   const handleCloseActiveRoom = async () => {
     if (!activeHostedRoom) return;
+    const confirmed = window.confirm(
+      `Are you sure you want to end and close "${activeHostedRoom.name || activeHostedRoom.code}"? This will end the party session for all connected singers.`
+    );
+    if (!confirmed) return;
+
     setClosing(true);
     setError(null);
     try {
@@ -187,56 +192,69 @@ export const CreateRoomPage: React.FC = () => {
             )}
 
             {/* Active Hosted Room Info Card */}
-            <div className="p-4 rounded-2xl bg-white/[0.04] border border-[#8B5CF6]/30 mb-5">
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <span className="text-[11px] font-black uppercase tracking-wider text-emerald-400 font-['Outfit'] flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  Live Hosted Session
-                </span>
-                <span className="text-[10px] font-bold text-[#A78BFA] bg-[#8B5CF6]/15 px-2 py-0.5 rounded-full border border-[#8B5CF6]/30">
+            <div className="p-5 rounded-2xl bg-white/[0.04] border border-[#8B5CF6]/30 mb-5">
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-bold">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>Live Session In Progress</span>
+                </div>
+                <span className="text-[10px] font-bold text-[#A78BFA] bg-[#8B5CF6]/15 px-2.5 py-1 rounded-full border border-[#8B5CF6]/30 uppercase tracking-wider">
                   👑 You are Host
                 </span>
               </div>
 
-              <h3 className="text-base font-bold text-white truncate font-['Outfit'] mb-1">
-                {activeHostedRoom.name || 'QueueMic Lounge'}
-              </h3>
-
-              <div className="flex items-baseline gap-2 mb-3">
-                <span className="text-xs text-slate-400">Room Code:</span>
-                <span className="font-mono text-2xl font-black text-[#06B6D4] tracking-widest">
-                  {activeHostedRoom.code}
+              <div className="mb-3.5">
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-0.5">
+                  Current Party Room
                 </span>
+                <h3 className="text-base sm:text-lg font-bold text-white truncate font-['Outfit']">
+                  {activeHostedRoom.name || 'QueueMic Lounge'}
+                </h3>
               </div>
 
-              <p className="text-xs text-slate-400 leading-relaxed border-t border-white/[0.06] pt-2.5">
-                You cannot create a new party room while this session is still active. Re-enter your TV stage to continue playing, or end and close the room to start a new one.
+              <div className="p-3.5 rounded-xl bg-black/40 border border-white/10 flex items-center justify-between gap-3 mb-3.5">
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">
+                    Room Code
+                  </span>
+                  <span className="font-mono text-2xl font-black text-[#06B6D4] tracking-widest block">
+                    {activeHostedRoom.code}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-slate-300 bg-white/5 px-3 py-1.5 rounded-lg border border-white/10">
+                  <Tv className="w-3.5 h-3.5 text-[#8B5CF6]" />
+                  <span>TV Stage</span>
+                </div>
+              </div>
+
+              <p className="text-xs text-slate-400 leading-relaxed border-t border-white/[0.06] pt-3">
+                You cannot create a new party room while this session is active. Re-enter your TV stage to control playback, or end and close the room to start a new one.
               </p>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex flex-col gap-3">
+            {/* Action Buttons: Clean, single-line, aligned */}
+            <div className="flex flex-col gap-2.5">
               <NeonButton
                 type="button"
                 variant="primary"
                 size="lg"
                 onClick={handleReenterActiveRoom}
-                icon={<ArrowRight className="w-4 h-4" />}
-                className="w-full font-bold flex items-center justify-center gap-2"
+                icon={<Tv className="w-5 h-5 text-white" />}
+                className="w-full py-3.5 text-sm sm:text-base font-bold flex items-center justify-center gap-2.5 shadow-lg shadow-[#8B5CF6]/20"
               >
-                ⚡️ Re-enter Host Stage (TV Mode)
+                Re-enter Host Stage
               </NeonButton>
 
               <NeonButton
                 type="button"
-                variant="outline"
+                variant="danger"
                 size="md"
                 loading={closing}
                 onClick={handleCloseActiveRoom}
-                icon={<PowerOff className="w-4 h-4 text-red-400" />}
-                className="w-full border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-bold flex items-center justify-center gap-2"
+                icon={<Power className="w-4 h-4" />}
+                className="w-full py-3 text-sm font-semibold flex items-center justify-center gap-2"
               >
-                🛑 End & Close Room (Allow New Room)
+                End & Close Room
               </NeonButton>
             </div>
           </GlassCard>

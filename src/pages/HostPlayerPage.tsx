@@ -18,6 +18,8 @@ import { queueApi } from '../api/queueApi';
 import { playbackApi } from '../api/playbackApi';
 import type { RoomMember } from '../types';
 
+const HEARTBEAT_INTERVAL_MS = 30000;
+
 const useIsMobile = () => {
   const [isMobile, setIsMobile] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -84,15 +86,19 @@ export const HostPlayerPage: React.FC = () => {
     },
   });
 
-  // Periodic host position sync anchor every 30s
+  // Host position sync anchor: as soon as the player has a position after (re)starting — a new song, or a
+  // guest's resume — then every 30s. Guests hold off resyncing until this first report arrives
   useEffect(() => {
-    if (!roomCode) return;
+    if (!roomCode || playbackState !== 'playing' || !currentPlaying) return;
+    const queueItemId = currentPlaying.id;
+    let lastSentAt = 0;
+
     const interval = setInterval(() => {
-      if (currentPlaying && playbackState === 'playing') {
-        const livePos = getLivePlaybackPosition();
-        playbackApi.updatePlaybackState(roomCode, playbackState, livePos, currentPlaying.id).catch(() => {});
-      }
-    }, 30000);
+      if (usePlaybackStore.getState().currentTimeSeconds <= 0) return;
+      if (Date.now() - lastSentAt < HEARTBEAT_INTERVAL_MS) return;
+      lastSentAt = Date.now();
+      playbackApi.updatePlaybackState(roomCode, 'playing', getLivePlaybackPosition(), queueItemId).catch(() => {});
+    }, 500);
     return () => clearInterval(interval);
   }, [roomCode, currentPlaying?.id, playbackState]);
 

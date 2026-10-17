@@ -364,7 +364,7 @@ export const JoinRoomPage: React.FC = () => {
               icon={<Camera className="w-4 h-4 text-[#06B6D4]" />}
               className="w-full border border-[#06B6D4]/30 bg-[#06B6D4]/10 hover:bg-[#06B6D4]/20 text-white font-bold"
             >
-              ⚡️ Open QR Camera Scanner
+              Open Camera QR Scanner
             </NeonButton>
           </GlassCard>
         </div>

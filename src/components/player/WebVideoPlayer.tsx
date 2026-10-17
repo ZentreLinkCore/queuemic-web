@@ -7,6 +7,14 @@ import { usePlaybackStore } from '../../store/usePlaybackStore';
 
 const DRIFT_TOLERANCE_SECONDS = 0.4;
 const RESYNC_COOLDOWN_MS = 3000;
+// Upper bound for the learned "seek ahead" that compensates this browser's buffering after a seek
+const MAX_SEEK_LEAD_SECONDS = 3;
+// YT.PlayerState.PAUSED, for checks that run before the API object is at hand
+const YT_PAUSED = 2;
+
+type PlayerEvent =
+  | { type: 'ready' | 'playing' | 'paused' | 'ended' | 'buffering' }
+  | { type: 'timeupdate'; currentTime: number; duration: number };
 
 let youTubeApiPromise: Promise<any> | null = null;
 export const loadYouTubeIframeApi = (): Promise<any> => {
@@ -103,9 +111,20 @@ export const WebVideoPlayer: React.FC<WebVideoPlayerProps> = ({
   const playerRef = useRef<any>(null);
   const lastResyncAtRef = useRef<number>(0);
   const isBufferingRef = useRef<boolean>(false);
+  // Seconds to seek past the room position, learned from how long this browser takes to resume after a seek
+  const seekLeadRef = useRef<number>(0.3);
+  const awaitingSeekResultRef = useRef<boolean>(false);
+  // The paused anchor this player was last parked on, so each host pause is matched once
+  const alignedAnchorRef = useRef<PlaybackSyncAnchor | null>(null);
+  // YT.Player callbacks are bound once per video; route them to the latest render's handler
+  const playerEventRef = useRef<(event: PlayerEvent) => void>(() => {});
   const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isPlaying = playbackState === 'playing';
+  const isPlayingRef = useRef(isPlaying);
+  isPlayingRef.current = isPlaying;
+  const followHostRef = useRef(followHost);
+  followHostRef.current = followHost;
 
   // Internal reactive playback time and duration for zero-lag smooth progress tracking
   const [localTime, setLocalTime] = useState<number>(currentTimeSeconds);
@@ -308,24 +327,97 @@ export const WebVideoPlayer: React.FC<WebVideoPlayerProps> = ({
     if (durationSeconds > 0 && expected >= durationSeconds) return;
     if (Date.now() - lastResyncAtRef.current < RESYNC_COOLDOWN_MS) return;
 
-    const drift = expected - actualSeconds;
-    if (Math.abs(drift) > DRIFT_TOLERANCE_SECONDS) {
-      lastResyncAtRef.current = Date.now();
-      try {
-        playerRef.current?.seekTo(expected, true);
-      } catch (e) {}
+    const drift = expected - actualSeconds; // > 0: this player is behind the room
+    if (awaitingSeekResultRef.current) {
+      // Whatever lag is left after the last seek is how long this browser buffers: lead future seeks by it
+      seekLeadRef.current = Math.min(MAX_SEEK_LEAD_SECONDS, Math.max(0, seekLeadRef.current + drift));
+      awaitingSeekResultRef.current = false;
+    }
+    if (Math.abs(drift) <= DRIFT_TOLERANCE_SECONDS) return;
+
+    lastResyncAtRef.current = Date.now();
+    awaitingSeekResultRef.current = true;
+    try {
+      playerRef.current?.seekTo(expected + seekLeadRef.current, true);
+    } catch (e) {}
+  };
+
+  // Room paused: park this guest's frame where the host stopped, so the resume starts in step instead of seeking
+  const alignPausedToRoom = () => {
+    const player = playerRef.current;
+    if (!player || !anchorForSong || anchorForSong.state !== 'paused') return;
+    if (alignedAnchorRef.current === anchorForSong) return;
+    try {
+      // seekTo from any state but paused would start playback
+      if (player.getPlayerState?.() !== YT_PAUSED) return;
+      alignedAnchorRef.current = anchorForSong;
+      if (Math.abs(player.getCurrentTime() - anchorForSong.positionSeconds) > DRIFT_TOLERANCE_SECONDS) {
+        player.seekTo(anchorForSong.positionSeconds, true);
+      }
+    } catch (e) {}
+  };
+
+  const handlePlayerEvent = (event: PlayerEvent) => {
+    const player = playerRef.current;
+    switch (event.type) {
+      case 'ready':
+        try {
+          if (isPlaying) player?.playVideo();
+        } catch (err) {}
+        break;
+      case 'timeupdate': {
+        const effectiveDur = event.duration > 0 ? event.duration : (currentSong?.song?.durationSeconds || 0);
+        setLocalTime(event.currentTime);
+        if (effectiveDur > 0) {
+          setLocalDuration(effectiveDur);
+        }
+        onTimeUpdate?.(event.currentTime, effectiveDur);
+        if (followHost) resyncToRoom(event.currentTime);
+        break;
+      }
+      case 'playing':
+        isBufferingRef.current = false;
+        setWebNeedsTap(false);
+        // A guest never plays ahead of a paused room (autoplay, or a play that landed after the host paused)
+        if (followHost && !isPlaying) {
+          try {
+            player?.pauseVideo();
+          } catch (err) {}
+          break;
+        }
+        setVideoPhase('playing');
+        if (!followHost && !isPlaying) onPlaybackStateChange?.('playing');
+        break;
+      case 'paused':
+        setVideoPhase('paused');
+        if (followHost) alignPausedToRoom();
+        else if (isPlaying) onPlaybackStateChange?.('paused');
+        break;
+      case 'buffering':
+        isBufferingRef.current = true;
+        break;
+      case 'ended':
+        setVideoPhase('ended');
+        onSongEnd?.();
+        break;
     }
   };
+  playerEventRef.current = handlePlayerEvent;
 
   // Mount official YouTube IFrame Player
   useEffect(() => {
     if (!videoId || typeof window === 'undefined') return;
     let cancelled = false;
     let pollTimer: ReturnType<typeof setInterval> | undefined;
+    const emit = (event: PlayerEvent) => playerEventRef.current(event);
 
     setVideoPhase('loading');
     setWebNeedsTap(false);
     setWebAutoMuted(false);
+    // New video: forget the previous song's buffering and seek bookkeeping
+    isBufferingRef.current = false;
+    awaitingSeekResultRef.current = false;
+    alignedAnchorRef.current = null;
 
     loadYouTubeIframeApi().then((YT) => {
       if (cancelled || !containerRef.current) return;
@@ -359,31 +451,25 @@ export const WebVideoPlayer: React.FC<WebVideoPlayerProps> = ({
                 e.target.unMute();
                 e.target.setVolume(100);
               }
-              if (isPlaying) {
-                e.target.playVideo();
-              }
             } catch (err) {}
+            emit({ type: 'ready' });
 
             pollTimer = setInterval(() => {
               const p = playerRef.current;
               if (!p || typeof p.getCurrentTime !== 'function') return;
-              const cur = Math.round((p.getCurrentTime() || 0) * 100) / 100;
-              const dur = Math.floor(p.getDuration() || 0);
-              const effectiveDur = dur > 0 ? dur : (currentSong?.song?.durationSeconds || 0);
-              setLocalTime(cur);
-              if (effectiveDur > 0) {
-                setLocalDuration(effectiveDur);
-              }
-              onTimeUpdate?.(cur, effectiveDur);
-              if (followHost) resyncToRoom(cur);
+              emit({
+                type: 'timeupdate',
+                currentTime: Math.round((p.getCurrentTime() || 0) * 100) / 100,
+                duration: Math.floor(p.getDuration() || 0),
+              });
             }, 250);
 
             // Check if autoplay was blocked by browser
             setTimeout(() => {
-              if (isPlaying && playerRef.current) {
+              if (isPlayingRef.current && playerRef.current) {
                 const state = playerRef.current.getPlayerState?.();
                 if (state !== 1 && state !== 3) {
-                  if (followHost) {
+                  if (followHostRef.current) {
                     playerRef.current.mute();
                     playerRef.current.playVideo();
                     setWebAutoMuted(true);
@@ -395,20 +481,10 @@ export const WebVideoPlayer: React.FC<WebVideoPlayerProps> = ({
             }, 1200);
           },
           onStateChange: (e: any) => {
-            if (e.data === YT.PlayerState.PLAYING) {
-              isBufferingRef.current = false;
-              setWebNeedsTap(false);
-              setVideoPhase('playing');
-              if (!followHost && !isPlaying) onPlaybackStateChange?.('playing');
-            } else if (e.data === YT.PlayerState.PAUSED) {
-              setVideoPhase('paused');
-              if (!followHost && isPlaying) onPlaybackStateChange?.('paused');
-            } else if (e.data === YT.PlayerState.BUFFERING) {
-              isBufferingRef.current = true;
-            } else if (e.data === YT.PlayerState.ENDED) {
-              setVideoPhase('ended');
-              onSongEnd?.();
-            }
+            if (e.data === YT.PlayerState.PLAYING) emit({ type: 'playing' });
+            else if (e.data === YT.PlayerState.PAUSED) emit({ type: 'paused' });
+            else if (e.data === YT.PlayerState.BUFFERING) emit({ type: 'buffering' });
+            else if (e.data === YT.PlayerState.ENDED) emit({ type: 'ended' });
           },
         },
       });
@@ -436,6 +512,24 @@ export const WebVideoPlayer: React.FC<WebVideoPlayerProps> = ({
       }
     } catch (e) {}
   }, [isPlaying]);
+
+  // A new paused anchor while already paused (the host seeked, or re-reported): park on it too
+  useEffect(() => {
+    if (followHost) alignPausedToRoom();
+  }, [syncAnchor]);
+
+  // A hidden tab can let the browser pause a guest's video; once visible again, rejoin a room that is still playing
+  useEffect(() => {
+    if (!followHost) return;
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== 'visible' || !isPlayingRef.current) return;
+      try {
+        if (playerRef.current?.getPlayerState?.() === YT_PAUSED) playerRef.current.playVideo();
+      } catch (e) {}
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [followHost]);
 
   // Handle external seek target
   useEffect(() => {
