@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mic2, Radio, QrCode, Tv, Music, ArrowRight, Sparkles, LogIn } from 'lucide-react';
+import { Mic2, Radio, QrCode, Music, ArrowRight, Sparkles } from 'lucide-react';
 import { GlassCard } from '../components/common/GlassCard';
 import { NeonButton } from '../components/common/NeonButton';
+import { WebNicknameModal } from '../components/common/WebNicknameModal';
 import { useRoomStore } from '../store/useRoomStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { roomApi } from '../api/roomApi';
@@ -10,7 +11,10 @@ import { roomApi } from '../api/roomApi';
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
   const { lastRoom, setLastRoom, setCurrentRoom } = useRoomStore();
+  const { nickname, avatarColor } = useAuthStore();
   const [rejoining, setRejoining] = useState(false);
+  const [isNicknameModalOpen, setIsNicknameModalOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<'create' | 'join' | null>(null);
 
   // Check if lastRoom is still active on the server
   useEffect(() => {
@@ -30,7 +34,7 @@ export const HomePage: React.FC = () => {
     if (!lastRoom) return;
     setRejoining(true);
     try {
-      const singerNickname = lastRoom.nickname || useAuthStore.getState().nickname || 'Singer';
+      const singerNickname = lastRoom.nickname || nickname || 'Singer';
       const response = await roomApi.joinRoom({
         roomCode: lastRoom.code,
         nickname: singerNickname,
@@ -67,6 +71,35 @@ export const HomePage: React.FC = () => {
     }
   };
 
+  const handleHostPress = () => {
+    if (!nickname || !nickname.trim()) {
+      setPendingAction('create');
+      setIsNicknameModalOpen(true);
+      return;
+    }
+    navigate('/create');
+  };
+
+  const handleJoinPress = () => {
+    if (!nickname || !nickname.trim()) {
+      setPendingAction('join');
+      setIsNicknameModalOpen(true);
+      return;
+    }
+    navigate('/join');
+  };
+
+  const handleNicknameSuccess = () => {
+    setIsNicknameModalOpen(false);
+    if (pendingAction === 'create') {
+      setPendingAction(null);
+      navigate('/create');
+    } else if (pendingAction === 'join') {
+      setPendingAction(null);
+      navigate('/join');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#0D0E15] text-white flex flex-col items-center overflow-x-hidden">
       {/* 1st Viewport / Above the Fold: Fills full viewport on mobile (100dvh) */}
@@ -88,33 +121,65 @@ export const HomePage: React.FC = () => {
           </div>
         </header>
 
+        {/* Singer Profile Badge matching mobapp: Fills the first empty space */}
+        <div className="w-full max-w-sm mt-3 mb-1 animate-fade-in">
+          <div className="px-3.5 py-2.5 rounded-2xl bg-white/[0.04] border border-white/10 hover:border-white/20 flex items-center justify-between gap-3 shadow-md transition-all">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div
+                className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-white text-sm shadow-md ring-2 ring-white/15 shrink-0"
+                style={{
+                  backgroundColor: avatarColor || '#8B5CF6',
+                  boxShadow: `0 0 12px ${(avatarColor || '#8B5CF6')}60`,
+                }}
+              >
+                {nickname ? nickname.charAt(0).toUpperCase() : '🎤'}
+              </div>
+              <div className="min-w-0 text-left">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  Singer Profile
+                </span>
+                <span className="text-xs sm:text-sm font-bold text-white font-['Outfit'] truncate block">
+                  {nickname || 'Set your nickname'}
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsNicknameModalOpen(true)}
+              className="text-[11px] font-bold text-[#06B6D4] hover:text-[#22D3EE] px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all cursor-pointer shrink-0"
+            >
+              {nickname ? '✏️ Change' : '+ Set'}
+            </button>
+          </div>
+        </div>
+
         {/* Hero Section: Centered */}
-        <main className="w-full max-w-2xl flex flex-col items-center text-center my-auto py-6 sm:py-10">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.04] border border-white/10 text-xs text-slate-300 mb-5 sm:mb-6 shadow-sm">
+        <main className="w-full max-w-2xl flex flex-col items-center text-center my-auto py-3 sm:py-6">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.04] border border-white/10 text-xs text-slate-300 mb-4 sm:mb-5 shadow-sm">
             <Sparkles className="w-3.5 h-3.5 text-[#EC4899]" />
             <span>Real-time collaborative karaoke party</span>
           </div>
 
-          <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight font-['Outfit'] leading-[1.1] mb-5 sm:mb-6">
+          <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight font-['Outfit'] leading-[1.1] mb-4 sm:mb-5">
             Sing Together.{' '}
             <span className="bg-gradient-to-r from-[#8B5CF6] via-[#EC4899] to-[#06B6D4] bg-clip-text text-transparent">
               In Perfect Sync.
             </span>
           </h1>
 
-          <p className="text-sm sm:text-base md:text-lg text-slate-400 max-w-xl mb-8 sm:mb-10 leading-relaxed font-normal px-2">
+          <p className="text-sm sm:text-base md:text-lg text-slate-400 max-w-xl mb-6 sm:mb-8 leading-relaxed font-normal px-2">
             Queue karaoke tracks from any phone or laptop. Watch video playback and lyrics in real time,
             with sub-second synchronization and zero latency drift.
           </p>
 
-          {/* Action Buttons */}
-          <div className="flex flex-col gap-3.5 w-full max-w-sm mb-4">
+          {/* Action Buttons: Themed with mobapp icons and colors */}
+          <div className="flex flex-col gap-3.5 w-full max-w-sm mb-2">
             <NeonButton
               size="lg"
               variant="primary"
-              onClick={() => navigate('/create')}
-              icon={<Tv className="w-5 h-5" />}
-              className="w-full py-3.5 text-sm sm:text-base font-bold shadow-lg shadow-[#8B5CF6]/20"
+              onClick={handleHostPress}
+              icon={<span className="text-xl">👑</span>}
+              className="w-full py-3.5 text-sm sm:text-base font-bold shadow-lg shadow-[#8B5CF6]/30 flex items-center justify-center gap-2"
             >
               Host a Party Room
             </NeonButton>
@@ -122,9 +187,9 @@ export const HomePage: React.FC = () => {
             <NeonButton
               size="lg"
               variant="outline"
-              onClick={() => navigate('/join')}
-              icon={<LogIn className="w-5 h-5" />}
-              className="w-full py-3.5 text-sm sm:text-base font-bold"
+              onClick={handleJoinPress}
+              icon={<span className="text-xl">📱</span>}
+              className="w-full py-3.5 text-sm sm:text-base font-bold border-[#06B6D4]/40 bg-[#06B6D4]/10 hover:bg-[#06B6D4]/20 text-[#22D3EE] shadow-[0_0_15px_rgba(6,182,212,0.25)] flex items-center justify-center gap-2"
             >
               Join as Singer
             </NeonButton>
@@ -136,9 +201,9 @@ export const HomePage: React.FC = () => {
               <GlassCard
                 variant="elevated"
                 glow="cyan"
-                className="p-4 sm:p-5 border-[#06B6D4]/40 bg-gradient-to-r from-[#06B6D4]/15 via-[#12131C] to-[#8B5CF6]/15 text-left shadow-lg"
+                className="p-3.5 sm:p-4 border-[#06B6D4]/40 bg-gradient-to-r from-[#06B6D4]/15 via-[#12131C] to-[#8B5CF6]/15 text-left shadow-lg"
               >
-                <div className="flex items-center justify-between gap-3 mb-2.5">
+                <div className="flex items-center justify-between gap-3 mb-2">
                   <div className="flex items-center gap-2">
                     <span className="relative flex h-2.5 w-2.5">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -155,9 +220,9 @@ export const HomePage: React.FC = () => {
                   )}
                 </div>
 
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <h4 className="text-base font-bold text-white truncate font-['Outfit']">
+                    <h4 className="text-sm font-bold text-white truncate font-['Outfit']">
                       {lastRoom.name || 'QueueMic Lounge'}
                     </h4>
                     <p className="text-xs text-slate-300 font-mono flex items-center gap-1.5 mt-0.5">
@@ -173,8 +238,8 @@ export const HomePage: React.FC = () => {
                     variant="primary"
                     onClick={handleRejoin}
                     loading={rejoining}
-                    icon={<ArrowRight className="w-4 h-4" />}
-                    className="shrink-0 px-4 py-2 font-bold shadow-[0_0_15px_rgba(6,182,212,0.35)]"
+                    icon={<ArrowRight className="w-3.5 h-3.5" />}
+                    className="shrink-0 px-3.5 py-1.5 font-bold text-xs shadow-[0_0_12px_rgba(6,182,212,0.35)]"
                   >
                     ⚡️ Rejoin
                   </NeonButton>
@@ -182,14 +247,45 @@ export const HomePage: React.FC = () => {
               </GlassCard>
             </div>
           )}
+
+          {/* Quick Party Pillar Badges: Fills the lower empty space, matching mobapp theme */}
+          <div className="w-full max-w-sm grid grid-cols-3 gap-2 mt-4 pt-1 animate-fade-in">
+            <div className="p-2.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-center flex flex-col items-center hover:border-[#8B5CF6]/30 transition-all shadow-sm">
+              <span className="text-base mb-1">👑</span>
+              <span className="text-[11px] font-bold text-white font-['Outfit']">Host TV</span>
+              <span className="text-[9px] text-[#A78BFA] font-medium">Big Screen</span>
+            </div>
+
+            <div className="p-2.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-center flex flex-col items-center hover:border-[#06B6D4]/30 transition-all shadow-sm">
+              <span className="text-base mb-1">📱</span>
+              <span className="text-[11px] font-bold text-white font-['Outfit']">Phone Mic</span>
+              <span className="text-[9px] text-[#06B6D4] font-medium">Remote Queue</span>
+            </div>
+
+            <div className="p-2.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-center flex flex-col items-center hover:border-emerald-500/30 transition-all shadow-sm">
+              <span className="text-base mb-1">⚡️</span>
+              <span className="text-[11px] font-bold text-white font-['Outfit']">Real-time</span>
+              <span className="text-[9px] text-emerald-400 font-medium">Zero Drift</span>
+            </div>
+          </div>
         </main>
 
         {/* Scroll Hint */}
-        <div className="shrink-0 pb-2 text-[11px] text-slate-500 font-medium flex items-center gap-1.5 opacity-60">
-          <span>Scroll down for features</span>
+        <div className="shrink-0 pb-1 text-[11px] text-slate-500 font-medium flex items-center gap-1.5 opacity-60">
+          <span>Scroll down for party features</span>
           <span>↓</span>
         </div>
       </div>
+
+      {/* Nickname Modal matching mobapp */}
+      <WebNicknameModal
+        isOpen={isNicknameModalOpen}
+        onClose={() => {
+          setIsNicknameModalOpen(false);
+          setPendingAction(null);
+        }}
+        onSuccess={handleNicknameSuccess}
+      />
 
       {/* 2nd Screen / Below the Fold: Feature Highlights Grid (Visible only on scroll!) */}
       <section className="w-full max-w-4xl px-4 sm:px-6 py-12 sm:py-16 border-t border-white/[0.08]">
