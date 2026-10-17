@@ -27,7 +27,7 @@ export function useEchoRoom(
   isHost: boolean = false,
   options?: UseEchoRoomOptions
 ) {
-  const { setConnected, addMember, removeMember, setMembers, updateRoomSettings } = useRoomStore();
+  const { setConnected, addMember, removeMember, setMembers, setCurrentRoom, updateRoomSettings } = useRoomStore();
   const { setQueue, setCurrentPlaying } = useQueueStore();
 
   const [echoGeneration, setEchoGeneration] = useState(0);
@@ -203,8 +203,11 @@ export function useEchoRoom(
         await syncNowPlaying(queue);
 
         const roomRes = await roomApi.getRoomDetails(normalizedCode);
-        if (roomRes.success && roomRes.data?.settings) {
-          updateRoomSettings(roomRes.data.settings);
+        if (roomRes.success && roomRes.data) {
+          setCurrentRoom(roomRes.data);
+          if (roomRes.data.settings) {
+            updateRoomSettings(roomRes.data.settings);
+          }
         }
 
         const membersRes = await roomApi.getRoomMembers(normalizedCode);
