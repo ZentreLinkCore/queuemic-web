@@ -185,10 +185,10 @@ export const HomePage: React.FC = () => {
 
             <NeonButton
               size="lg"
-              variant="secondary"
+              variant="outline"
               onClick={handleJoinPress}
               icon={<span className="text-xl">📱</span>}
-              className="w-full py-3.5 text-sm sm:text-base font-extrabold flex items-center justify-center gap-2"
+              className="w-full py-3.5 text-sm sm:text-base font-bold text-white bg-white/[0.05] border border-white/15 hover:bg-white/[0.09] flex items-center justify-center gap-2"
             >
               Join as Singer
             </NeonButton>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, LogIn, AlertCircle, Camera, X } from 'lucide-react';
+import { ChevronLeft, LogIn, AlertCircle, Camera, X } from 'lucide-react';
 import { GlassCard } from '../components/common/GlassCard';
 import { NeonButton } from '../components/common/NeonButton';
 import { WebQRScannerModal } from '../components/room/WebQRScannerModal';
@@ -148,22 +148,31 @@ export const JoinRoomPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0D0E15] text-white flex flex-col items-center justify-center p-4 sm:p-6">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-[#0D0E15] text-white flex flex-col items-center">
+      {/* Top Mobile HeaderBar */}
+      <header className="w-full max-w-lg flex items-center gap-3 py-3 px-4 border-b border-white/[0.08] shrink-0 bg-[#0D0E15]/95 backdrop-blur-md sticky top-0 z-30">
         <button
           type="button"
           onClick={() => navigate('/')}
-          className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors mb-6 cursor-pointer"
+          className="w-9 h-9 rounded-xl bg-white/[0.05] border border-white/10 hover:bg-white/10 text-slate-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+          aria-label="Back to Home"
         >
-          <ArrowLeft className="w-4 h-4" /> Back to Home
+          <ChevronLeft className="w-5 h-5" />
         </button>
+        <div>
+          <h1 className="text-base font-bold text-white font-['Outfit']">Join a QueueMic Room</h1>
+          <p className="text-[11px] text-slate-400">Queue songs & follow live progress</p>
+        </div>
+      </header>
 
+      {/* Main Content: Flows naturally from the top */}
+      <main className="w-full max-w-lg p-4 sm:p-6 flex-1 flex flex-col">
         {/* Previous Active Room Rejoin Card */}
         {lastRoom && (
           <GlassCard
             variant="elevated"
             glow="none"
-            className="p-4 sm:p-5 mb-5 border border-[#06B6D4]/30 bg-gradient-to-r from-[#06B6D4]/10 via-[#12131C] to-[#8B5CF6]/10 text-left animate-fade-in"
+            className="p-4 sm:p-5 mb-4 border border-[#06B6D4]/30 bg-gradient-to-r from-[#06B6D4]/10 via-[#12131C] to-[#8B5CF6]/10 text-left animate-fade-in"
           >
             <div className="flex items-center justify-between gap-2 mb-2">
               <span className="text-[11px] font-black uppercase tracking-wider text-emerald-400 font-['Outfit'] flex items-center gap-1.5">
@@ -199,14 +208,14 @@ export const JoinRoomPage: React.FC = () => {
         )}
 
         {/* 1. Manual 6-Digit Code Entry Card */}
-        <GlassCard variant="surface" glow="cyan" className="p-6 sm:p-8">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#06B6D4] to-[#8B5CF6] flex items-center justify-center border border-white/10">
-              <LogIn className="w-6 h-6 text-white" />
+        <GlassCard variant="surface" glow="cyan" className="p-5 sm:p-7">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#06B6D4] to-[#8B5CF6] flex items-center justify-center border border-white/10 shrink-0">
+              <LogIn className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-black font-['Outfit'] text-white">Join Party Room</h1>
-              <p className="text-xs text-slate-400">Queue songs and follow live progress</p>
+              <h2 className="text-lg font-bold font-['Outfit'] text-white">Enter Room Code</h2>
+              <p className="text-xs text-slate-400">Enter the 6-character code shown on the TV / Host screen.</p>
             </div>
           </div>
 
@@ -230,23 +239,23 @@ export const JoinRoomPage: React.FC = () => {
             {/* If nickname already created, lock it in so user doesn't have to re-create */}
             {storedNickname ? (
               <div className="p-3.5 rounded-xl bg-white/[0.04] border border-[#06B6D4]/30 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 min-w-0">
                   <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-base ring-1 ring-white/20"
+                    className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-base ring-1 ring-white/20 shrink-0"
                     style={{ backgroundColor: selectedColor || storedColor || '#06B6D4' }}
                   >
                     {storedNickname.charAt(0).toUpperCase()}
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                       Joining As
                     </span>
-                    <span className="text-sm font-bold text-white font-['Outfit']">
+                    <span className="text-sm font-bold text-white font-['Outfit'] truncate block">
                       {storedNickname}
                     </span>
                   </div>
                 </div>
-                <span className="text-[10px] font-bold text-[#06B6D4] bg-[#06B6D4]/15 px-2 py-0.5 rounded-full border border-[#06B6D4]/30 uppercase tracking-wider">
+                <span className="text-[10px] font-bold text-[#06B6D4] bg-[#06B6D4]/15 px-2 py-0.5 rounded-full border border-[#06B6D4]/30 uppercase tracking-wider shrink-0">
                   Guest Singer
                 </span>
               </div>
@@ -336,8 +345,8 @@ export const JoinRoomPage: React.FC = () => {
         {/* 2. Camera TV QR Scanner Card (Enabled on Mobile View) */}
         <div className="mt-4">
           <GlassCard variant="surface" className="p-5 border-white/[0.08] text-center">
-            <div className="w-12 h-12 rounded-2xl bg-[#06B6D4]/10 border border-[#06B6D4]/30 flex items-center justify-center mx-auto mb-2.5">
-              <span className="text-2xl">📷</span>
+            <div className="w-11 h-11 rounded-2xl bg-[#06B6D4]/10 border border-[#06B6D4]/30 flex items-center justify-center mx-auto mb-2.5">
+              <span className="text-xl">📷</span>
             </div>
             <h3 className="text-sm font-bold text-white font-['Outfit'] mb-1">
               Or Scan TV QR Code
@@ -351,13 +360,13 @@ export const JoinRoomPage: React.FC = () => {
               size="md"
               onClick={() => setIsScannerOpen(true)}
               icon={<Camera className="w-4 h-4 text-[#06B6D4]" />}
-              className="w-full border border-[#06B6D4]/30 bg-[#06B6D4]/10 hover:bg-[#06B6D4]/20 text-[#22D3EE] font-bold"
+              className="w-full border border-[#06B6D4]/30 bg-[#06B6D4]/10 hover:bg-[#06B6D4]/20 text-white font-bold"
             >
               ⚡️ Open QR Camera Scanner
             </NeonButton>
           </GlassCard>
         </div>
-      </div>
+      </main>
 
       {/* Camera QR Scanner Viewfinder Modal */}
       <WebQRScannerModal

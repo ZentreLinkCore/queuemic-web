@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Tv, AlertCircle } from 'lucide-react';
+import { ChevronLeft, Tv, AlertCircle } from 'lucide-react';
 import { GlassCard } from '../components/common/GlassCard';
 import { NeonButton } from '../components/common/NeonButton';
 import { useAuthStore } from '../store/useAuthStore';
@@ -58,23 +58,32 @@ export const CreateRoomPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0D0E15] text-white flex flex-col items-center justify-center p-4 sm:p-6">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-[#0D0E15] text-white flex flex-col items-center">
+      {/* Top Mobile HeaderBar */}
+      <header className="w-full max-w-lg flex items-center gap-3 py-3 px-4 border-b border-white/[0.08] shrink-0 bg-[#0D0E15]/95 backdrop-blur-md sticky top-0 z-30">
         <button
           type="button"
           onClick={() => navigate('/')}
-          className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors mb-6 cursor-pointer"
+          className="w-9 h-9 rounded-xl bg-white/[0.05] border border-white/10 hover:bg-white/10 text-slate-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+          aria-label="Back to Home"
         >
-          <ArrowLeft className="w-4 h-4" /> Back to Home
+          <ChevronLeft className="w-5 h-5" />
         </button>
+        <div>
+          <h1 className="text-base font-bold text-white font-['Outfit']">Host a QueueMic Room</h1>
+          <p className="text-[11px] text-slate-400">Configure party & launch screen</p>
+        </div>
+      </header>
 
-        <GlassCard variant="surface" glow="primary" className="p-6 sm:p-8">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#8B5CF6] to-[#EC4899] flex items-center justify-center border border-white/10">
-              <Tv className="w-6 h-6 text-white" />
+      {/* Main Content: Flows naturally from the top without awkward vertical centering */}
+      <main className="w-full max-w-lg p-4 sm:p-6 flex-1 flex flex-col">
+        <GlassCard variant="surface" glow="primary" className="p-5 sm:p-7">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#8B5CF6] to-[#EC4899] flex items-center justify-center border border-white/10 shrink-0">
+              <Tv className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-black font-['Outfit'] text-white">Room Setup</h1>
+              <h2 className="text-lg font-bold font-['Outfit'] text-white">Room Setup</h2>
               <p className="text-xs text-slate-400">Configure your party room and start queuing music.</p>
             </div>
           </div>
@@ -99,23 +108,23 @@ export const CreateRoomPage: React.FC = () => {
             {/* Host Profile Info */}
             {storedNickname ? (
               <div className="p-3.5 rounded-xl bg-white/[0.04] border border-[#8B5CF6]/30 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 min-w-0">
                   <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-base ring-1 ring-white/20"
+                    className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-base ring-1 ring-white/20 shrink-0"
                     style={{ backgroundColor: selectedColor || storedColor || '#8B5CF6' }}
                   >
                     {storedNickname.charAt(0).toUpperCase()}
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                       Hosting As
                     </span>
-                    <span className="text-sm font-bold text-white font-['Outfit']">
+                    <span className="text-sm font-bold text-white font-['Outfit'] truncate block">
                       {storedNickname}
                     </span>
                   </div>
                 </div>
-                <span className="text-[10px] font-bold text-[#A78BFA] bg-[#8B5CF6]/15 px-2 py-0.5 rounded-full border border-[#8B5CF6]/30 uppercase tracking-wider">
+                <span className="text-[10px] font-bold text-[#A78BFA] bg-[#8B5CF6]/15 px-2 py-0.5 rounded-full border border-[#8B5CF6]/30 uppercase tracking-wider shrink-0">
                   👑 TV / Sound Host
                 </span>
               </div>
@@ -193,7 +202,7 @@ export const CreateRoomPage: React.FC = () => {
             </div>
           </form>
         </GlassCard>
-      </div>
+      </main>
     </div>
   );
 };
