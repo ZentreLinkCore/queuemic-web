@@ -191,7 +191,7 @@ export const WebQRScannerModal: React.FC<WebQRScannerModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in select-none">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xl animate-fade-in select-none">
       <div className="w-full max-w-sm relative">
         <GlassCard variant="elevated" glow="cyan" className="p-5 relative border-white/10">
           {/* Header */}

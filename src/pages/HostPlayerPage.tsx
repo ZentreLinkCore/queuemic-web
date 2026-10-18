@@ -512,8 +512,14 @@ const HostPlayerRoom: React.FC<{ roomCode: string }> = ({ roomCode }) => {
 
       {/* Slide-out Queue Drawer in TV View */}
       {isQueueDrawerOpen && (
-        <div className="fixed inset-0 z-[60] flex justify-end bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="w-full sm:w-[420px] h-full bg-[#12131C] border-l border-white/10 p-4 sm:p-6 flex flex-col shadow-2xl animate-slide-left">
+        <div
+          onClick={() => setIsQueueDrawerOpen(false)}
+          className="fixed inset-0 z-[60] flex justify-end bg-black/65 backdrop-blur-xl animate-fade-in"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full sm:w-[420px] h-full bg-[#12131C]/90 backdrop-blur-2xl border-l border-white/10 p-4 sm:p-6 flex flex-col shadow-2xl animate-slide-left"
+          >
             <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-4">
               <div className="flex items-center gap-2">
                 <Music className="w-5 h-5 text-[#8B5CF6]" />

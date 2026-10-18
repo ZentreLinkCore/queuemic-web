@@ -51,12 +51,16 @@ body {
 
 /* Glassmorphism utility classes matching mobapp theme */
 .glass-panel {
-  background: #151724;
+  background: rgba(21, 23, 36, 0.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .glass-card {
-  background: #1C1F30;
+  background: rgba(28, 31, 48, 0.82);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 

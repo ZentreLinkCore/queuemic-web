@@ -36,7 +36,7 @@ export const WebQRCodeDisplay: React.FC<WebQRCodeDisplayProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/70 backdrop-blur-xl animate-fade-in">
       <GlassCard
         variant="elevated"
         glow="cyan"

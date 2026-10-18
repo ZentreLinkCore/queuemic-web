@@ -153,14 +153,14 @@ export const WebSongSearchModal: React.FC<WebSongSearchModalProps> = ({
   confirmAddRef.current = handleConfirmAddQueue;
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in select-none">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-xl animate-fade-in select-none">
       <GlassCard
         variant="elevated"
         glow="primary"
         className="w-full max-w-2xl h-[88vh] max-h-[780px] p-0 flex flex-col overflow-hidden border-white/10 shadow-2xl"
       >
         {/* Modal Top Header Bar */}
-        <div className="px-5 py-4 border-b border-white/[0.08] flex items-center justify-between shrink-0 bg-[#12131C]">
+        <div className="px-5 py-4 border-b border-white/[0.08] flex items-center justify-between shrink-0 bg-[#12131C]/90 backdrop-blur-md">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-[#8B5CF6]/20 border border-[#8B5CF6]/30 flex items-center justify-center">
               <Music className="w-5 h-5 text-[#8B5CF6]" />

@@ -87,7 +87,7 @@ export const WebNicknameModal: React.FC<WebNicknameModalProps> = ({
   const initial = name.trim() ? name.trim().charAt(0).toUpperCase() : '🎤';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in select-none">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xl animate-fade-in select-none">
       <div className="w-full max-w-sm relative">
         <GlassCard variant="elevated" glow="primary" className="p-6 relative border-white/10">
           {/* Close button */}
