@@ -11,6 +11,10 @@ export default defineConfig({
     host: true,
     port: 5173,
   },
+  build: {
+    target: 'es2022',
+    cssTarget: ['chrome100', 'safari15', 'firefox100', 'edge100'],
+  },
   test: {
     globals: true,
     environment: 'jsdom',

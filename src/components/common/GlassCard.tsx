@@ -15,9 +15,9 @@ export const GlassCard: React.FC<GlassCardProps> = ({
   ...props
 }) => {
   const bgStyles = {
-    surface: 'bg-[#151724]/80 backdrop-blur-xl',
-    light: 'bg-[#1C1F30]/80 backdrop-blur-xl',
-    elevated: 'bg-[#1A1D2C]/85 backdrop-blur-2xl shadow-2xl',
+    surface: 'glass-surface',
+    light: 'glass-light',
+    elevated: 'glass-elevated shadow-2xl',
   }[variant];
 
   const borderStyles = {
@@ -30,6 +30,11 @@ export const GlassCard: React.FC<GlassCardProps> = ({
 
   return (
     <div
+      style={{
+        backdropFilter: variant === 'elevated' ? 'blur(28px) saturate(190%)' : 'blur(20px) saturate(180%)',
+        WebkitBackdropFilter: variant === 'elevated' ? 'blur(28px) saturate(190%)' : 'blur(20px) saturate(180%)',
+        ...props.style,
+      }}
       className={`relative overflow-hidden rounded-2xl border transition-all duration-200 ${bgStyles} ${borderStyles} ${className}`}
       {...props}
     >

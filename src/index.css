@@ -64,6 +64,39 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.glass-surface {
+  background-color: rgba(21, 23, 36, 0.82) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+}
+
+.glass-light {
+  background-color: rgba(28, 31, 48, 0.82) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+}
+
+.glass-elevated {
+  background-color: rgba(26, 29, 44, 0.88) !important;
+  backdrop-filter: blur(28px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+}
+
+/* True iOS / Expo-Blur frosted glass backdrop: translucent dark tint with rich blur & saturation */
+.modal-backdrop-blur {
+  background-color: rgba(6, 7, 14, 0.55) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  transform: translateZ(0);
+}
+
+.modal-backdrop-blur-heavy {
+  background-color: rgba(6, 7, 14, 0.62) !important;
+  backdrop-filter: blur(28px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+  transform: translateZ(0);
+}
+
 /* YouTube iframe cropping: cuts off YouTube title bar, channel avatar, watermark and more videos strip */
 .youtube-cropped-frame iframe {
   width: 100% !important;

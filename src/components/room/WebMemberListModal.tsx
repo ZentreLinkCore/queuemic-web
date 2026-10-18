@@ -22,7 +22,14 @@ export const WebMemberListModal: React.FC<WebMemberListModalProps> = ({
   if (!visible) return null;
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/70 backdrop-blur-xl animate-fade-in">
+    <div
+      style={{
+        backgroundColor: 'rgba(6, 7, 14, 0.55)',
+        backdropFilter: 'blur(20px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+      }}
+      className="fixed inset-0 z-[70] flex items-center justify-center p-4 modal-backdrop-blur animate-fade-in"
+    >
       <GlassCard
         variant="elevated"
         glow="primary"
