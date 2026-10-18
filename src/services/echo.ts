@@ -86,7 +86,6 @@ export async function fetchBroadcastingConfig(): Promise<any> {
     if (res.ok) {
       const data = await res.json();
       serverConfig = data?.data || data;
-      console.log('📡 [Broadcasting Config Loaded from Backend]:', serverConfig);
       const configConnection = describeConnection(serverConfig);
       if (echoInstance && configConnection && configConnection !== activeConnection) {
         disconnectEcho();
@@ -98,7 +97,7 @@ export async function fetchBroadcastingConfig(): Promise<any> {
       return serverConfig;
     }
   } catch (e) {
-    console.log('ℹ️ [Broadcasting Config Fallback to Local Defaults]');
+    // Config fetch failed; will fall back to local defaults
   } finally {
     isFetchingConfig = false;
   }
@@ -200,13 +199,6 @@ export function getEcho(): any {
       }),
     });
 
-    pusherClient.connection.bind('state_change', (states: any) => {
-      console.log(`📡 [Reverb WebSocket State]: ${states.previous} -> ${states.current}`);
-    });
-
-    pusherClient.connection.bind('connected', () => {
-      console.log(`🟢 [Reverb WebSocket Connected Successfully] (${activeConnection})`);
-    });
 
     pusherClient.connection.bind('error', (err: any) => {
       console.warn(`🔴 [Reverb WebSocket Connection Error]:`, err);

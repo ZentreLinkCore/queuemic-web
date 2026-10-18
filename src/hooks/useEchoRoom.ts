@@ -306,7 +306,6 @@ export function useEchoRoom(
     });
 
     channel.listen('.room.closed', (event: any) => {
-      console.log(`🛑 [Room Closed] Room ${normalizedCode} ended.`);
       options?.onRoomClosed?.(event?.message || 'The host has ended this party session.');
     });
 
