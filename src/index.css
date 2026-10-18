@@ -82,18 +82,18 @@ body {
   -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
 }
 
-/* True iOS / Expo-Blur frosted glass backdrop: translucent dark tint with rich blur & saturation */
+/* Bootstrap-style clean modal backdrop where the background remains clearly visible and readable */
 .modal-backdrop-blur {
-  background-color: rgba(6, 7, 14, 0.55) !important;
-  backdrop-filter: blur(20px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  background-color: rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: blur(2px) !important;
+  -webkit-backdrop-filter: blur(2px) !important;
   transform: translateZ(0);
 }
 
 .modal-backdrop-blur-heavy {
-  background-color: rgba(6, 7, 14, 0.62) !important;
-  backdrop-filter: blur(28px) saturate(190%) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+  background-color: rgba(0, 0, 0, 0.55) !important;
+  backdrop-filter: blur(3px) !important;
+  -webkit-backdrop-filter: blur(3px) !important;
   transform: translateZ(0);
 }
 

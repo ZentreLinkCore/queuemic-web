@@ -193,9 +193,9 @@ export const WebQRScannerModal: React.FC<WebQRScannerModalProps> = ({
   return (
     <div
       style={{
-        backgroundColor: 'rgba(6, 7, 14, 0.55)',
-        backdropFilter: 'blur(20px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        backdropFilter: 'blur(2px)',
+        WebkitBackdropFilter: 'blur(2px)',
       }}
       className="fixed inset-0 z-[70] flex items-center justify-center p-4 modal-backdrop-blur animate-fade-in select-none"
     >
