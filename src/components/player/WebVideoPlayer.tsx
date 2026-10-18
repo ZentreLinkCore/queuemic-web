@@ -624,7 +624,7 @@ export const WebVideoPlayer: React.FC<WebVideoPlayerProps> = ({
               <button
                 type="button"
                 onClick={onOpenSearch}
-                className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#8B5CF6] to-[#EC4899] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm hover:brightness-105 active:scale-95 transition-all cursor-pointer"
+                className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#8B5CF6] to-[#EC4899] text-white text-xs font-bold flex items-center gap-1.5 hover:brightness-105 active:scale-95 transition-all cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Add Song</span>
@@ -634,7 +634,7 @@ export const WebVideoPlayer: React.FC<WebVideoPlayerProps> = ({
             <button
               type="button"
               onClick={handleToggleFullscreen}
-              className="p-2.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.16] text-white transition-all cursor-pointer flex items-center gap-1.5 shadow-sm hover:scale-105 active:scale-95 border border-white/10"
+              className="p-2.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.16] text-white transition-all cursor-pointer flex items-center gap-1.5 hover:scale-105 active:scale-95 border border-white/10"
               title="Exit Fullscreen (Esc or F)"
             >
               <Minimize className="w-4 h-4 text-[#EC4899]" />
@@ -656,9 +656,9 @@ export const WebVideoPlayer: React.FC<WebVideoPlayerProps> = ({
 
         {/* Fullscreen TV View Connect Card (shown only in fullscreen) */}
         {isFullscreen && roomCode && (
-          <div className="flex flex-col sm:flex-row items-center gap-5 p-4 sm:p-5 rounded-2xl bg-[#1C1F30] border border-white/10 mt-6 max-w-lg w-full text-left shadow-sm">
+          <div className="flex flex-col sm:flex-row items-center gap-5 p-4 sm:p-5 rounded-2xl bg-[#1C1F30] border border-white/10 mt-6 max-w-lg w-full text-left">
             {joinUrl && (
-              <div className="bg-white p-3 rounded-xl shadow-md shrink-0">
+              <div className="bg-white p-3 rounded-xl shrink-0">
                 <QRCodeSVG value={joinUrl} size={110} level="M" />
               </div>
             )}
@@ -834,7 +834,7 @@ export const WebVideoPlayer: React.FC<WebVideoPlayerProps> = ({
           }`}
         >
         <div className="flex items-center gap-3">
-          <span className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-[#8B5CF6]/30 text-[#C084FC] border border-[#8B5CF6]/40 tracking-wider flex items-center gap-1.5 shadow-sm">
+          <span className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-[#8B5CF6]/30 text-[#C084FC] border border-[#8B5CF6]/40 tracking-wider flex items-center gap-1.5">
             <span>🎤</span>
             <span className="uppercase">{singerName}</span>
           </span>
@@ -913,8 +913,8 @@ export const WebVideoPlayer: React.FC<WebVideoPlayerProps> = ({
 
       {/* On-screen TV QR overlay when toggled */}
       {showQrOverlay && roomCode && (
-        <div className="absolute top-16 right-4 z-30 p-4 rounded-2xl bg-[#12131C]/95 backdrop-blur-xl border border-white/15 shadow-2xl flex flex-col items-center animate-slide-up">
-          <div className="bg-white p-3 rounded-xl mb-3 shadow-md">
+        <div className="absolute top-16 right-4 z-30 p-4 rounded-2xl bg-[#12131C]/95 backdrop-blur-xl border border-white/15 flex flex-col items-center animate-slide-up">
+          <div className="bg-white p-3 rounded-xl mb-3">
             <QRCodeSVG value={`${window.location.origin}/join?code=${roomCode}`} size={120} level="M" />
           </div>
           <span className="text-[11px] font-bold text-slate-300 uppercase tracking-widest">Scan to Sing</span>
@@ -977,7 +977,7 @@ export const WebVideoPlayer: React.FC<WebVideoPlayerProps> = ({
               <button
                 type="button"
                 onClick={onPlayPause}
-                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-sm shrink-0"
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0"
               >
                 {isPlaying ? <Pause className="w-4 h-4 sm:w-5 sm:h-5" /> : <Play className="w-4 h-4 sm:w-5 sm:h-5 translate-x-0.5" />}
               </button>

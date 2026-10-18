@@ -277,7 +277,7 @@ const HostPlayerRoom: React.FC<{ roomCode: string }> = ({ roomCode }) => {
       >
         <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
           {/* TV Icon Box: Shown on both Mobile and Web View */}
-          <div className="flex w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#8B5CF6]/15 border border-[#8B5CF6]/30 items-center justify-center shrink-0 shadow-sm">
+          <div className="flex w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#8B5CF6]/15 border border-[#8B5CF6]/30 items-center justify-center shrink-0">
             <Tv className="w-4 h-4 text-[#A78BFA]" />
           </div>
           <div className="min-w-0">
@@ -439,7 +439,7 @@ const HostPlayerRoom: React.FC<{ roomCode: string }> = ({ roomCode }) => {
               className={
                 isFullscreen
                   ? 'w-full h-full'
-                  : 'w-full h-full flex flex-col bg-black rounded-2xl overflow-hidden border border-white/[0.08] shadow-[0_0_60px_-15px_rgba(139,92,246,0.25)]'
+                  : 'w-full h-full flex flex-col bg-black rounded-2xl overflow-hidden border border-white/[0.08]'
               }
             >
               <div className="flex-1 min-h-0 w-full relative overflow-hidden bg-black">
@@ -523,7 +523,7 @@ const HostPlayerRoom: React.FC<{ roomCode: string }> = ({ roomCode }) => {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full sm:w-[420px] h-full bg-[#12131C]/90 backdrop-blur-2xl border-l border-white/10 p-4 sm:p-6 flex flex-col shadow-2xl animate-slide-left"
+            className="w-full sm:w-[420px] h-full bg-[#12131C]/90 backdrop-blur-2xl border-l border-white/10 p-4 sm:p-6 flex flex-col animate-slide-left"
           >
             <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-4">
               <div className="flex items-center gap-2">

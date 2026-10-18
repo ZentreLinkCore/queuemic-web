@@ -229,7 +229,7 @@ export const JoinRoomPage: React.FC = () => {
               </div>
 
               {/* Visual Graphic Card */}
-              <div className="rounded-2xl bg-gradient-to-b from-[#1C1F30] to-[#12131C] p-4 border border-white/10 shadow-[0_0_40px_-10px_rgba(6,182,212,0.25)] mb-5">
+              <div className="rounded-2xl bg-gradient-to-b from-[#1C1F30] to-[#12131C] p-4 border border-white/10 mb-5">
                 <div className="flex items-center justify-between text-[11px] text-slate-400 pb-2 mb-3 border-b border-white/[0.06]">
                   <span className="flex items-center gap-1.5 text-cyan-400 font-semibold font-mono text-[10px]">
                     <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" /> SINGER LOUNGE
@@ -238,7 +238,7 @@ export const JoinRoomPage: React.FC = () => {
                 </div>
                 <div className="aspect-video rounded-xl bg-black/70 border border-white/5 flex flex-col items-center justify-center p-4 text-center relative overflow-hidden">
                   <div className="absolute inset-0 bg-radial from-[#06B6D4]/15 via-transparent to-transparent pointer-events-none" />
-                  <div className="w-11 h-11 rounded-full bg-[#06B6D4]/20 border border-[#06B6D4]/40 flex items-center justify-center mb-2 shadow-lg shadow-[#06B6D4]/20">
+                  <div className="w-11 h-11 rounded-full bg-[#06B6D4]/20 border border-[#06B6D4]/40 flex items-center justify-center mb-2">
                     <Music2 className="w-5 h-5 text-[#06B6D4]" />
                   </div>
                   <span className="text-sm font-bold text-white font-['Outfit'] mb-0.5">

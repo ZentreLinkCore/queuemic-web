@@ -17,15 +17,15 @@ export const GlassCard: React.FC<GlassCardProps> = ({
   const bgStyles = {
     surface: 'glass-surface',
     light: 'glass-light',
-    elevated: 'glass-elevated shadow-2xl',
+    elevated: 'glass-elevated',
   }[variant];
 
   const borderStyles = {
     none: 'border-white/[0.08]',
-    primary: 'border-[#8B5CF6]/40 shadow-[0_4px_24px_rgba(139,92,246,0.18)]',
-    pink: 'border-[#EC4899]/40 shadow-[0_4px_24px_rgba(236,72,153,0.18)]',
-    cyan: 'border-[#06B6D4]/40 shadow-[0_4px_24px_rgba(6,182,212,0.18)]',
-    danger: 'border-[#F43F5E] shadow-[0_4px_20px_rgba(244,63,94,0.18)]',
+    primary: 'border-[#8B5CF6]/40',
+    pink: 'border-[#EC4899]/40',
+    cyan: 'border-[#06B6D4]/40',
+    danger: 'border-[#F43F5E]',
   }[glow];
 
   return (

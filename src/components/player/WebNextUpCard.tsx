@@ -23,7 +23,7 @@ export const WebNextUpCard: React.FC<WebNextUpCardProps> = ({
 
   return (
     <>
-      <div className="w-full px-4 py-3 rounded-2xl bg-[#12131C] border border-white/[0.08] shadow-sm flex items-center justify-between gap-3 shrink-0 transition-all select-none">
+      <div className="w-full px-4 py-3 rounded-2xl bg-[#12131C] border border-white/[0.08] flex items-center justify-between gap-3 shrink-0 transition-all select-none">
         {nextSong ? (
           <>
             <div
@@ -32,7 +32,7 @@ export const WebNextUpCard: React.FC<WebNextUpCardProps> = ({
               title="Click to view song details"
             >
               {/* Amber Up Next Pill Badge (matching mobapp) */}
-              <div className="px-2.5 py-1 rounded-lg bg-[#F59E0B] text-black font-black text-[10px] tracking-wider uppercase flex items-center gap-1 shadow-sm shrink-0">
+              <div className="px-2.5 py-1 rounded-lg bg-[#F59E0B] text-black font-black text-[10px] tracking-wider uppercase flex items-center gap-1 shrink-0">
                 <span>⚡️</span>
                 <span>UP NEXT</span>
               </div>

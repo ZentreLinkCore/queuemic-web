@@ -268,7 +268,7 @@ const GuestRoom: React.FC<{ roomCode: string }> = ({ roomCode }) => {
       <header className="h-14 px-3 sm:px-6 bg-[#12131C]/90 backdrop-blur-md border-b border-white/[0.08] flex items-center justify-between shrink-0 z-30 transition-all">
         <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
           {/* TV Icon Box: Shown on both Mobile and Web View */}
-          <div className="flex w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#06B6D4]/15 border border-[#06B6D4]/30 items-center justify-center shrink-0 shadow-sm">
+          <div className="flex w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#06B6D4]/15 border border-[#06B6D4]/30 items-center justify-center shrink-0">
             <Tv className="w-4 h-4 text-[#06B6D4]" />
           </div>
           <div className="min-w-0">
@@ -290,7 +290,7 @@ const GuestRoom: React.FC<{ roomCode: string }> = ({ roomCode }) => {
               onClick={() => setViewMode('video')}
               className={`px-2 sm:px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 sm:gap-1.5 transition-all cursor-pointer ${
                 viewMode === 'video'
-                  ? 'bg-[#06B6D4] text-white shadow-sm'
+                  ? 'bg-[#06B6D4] text-white'
                   : 'text-slate-400 hover:text-white'
               }`}
               title="Video View"
@@ -302,7 +302,7 @@ const GuestRoom: React.FC<{ roomCode: string }> = ({ roomCode }) => {
               onClick={() => setViewMode('progress')}
               className={`px-2 sm:px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 sm:gap-1.5 transition-all cursor-pointer ${
                 viewMode === 'progress'
-                  ? 'bg-[#06B6D4] text-white shadow-sm'
+                  ? 'bg-[#06B6D4] text-white'
                   : 'text-slate-400 hover:text-white'
               }`}
               title="Progress View"
@@ -365,7 +365,7 @@ const GuestRoom: React.FC<{ roomCode: string }> = ({ roomCode }) => {
                 onClick={() => setViewMode('video')}
                 className={`py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                   viewMode === 'video'
-                    ? 'bg-[#06B6D4] text-white shadow-sm'
+                    ? 'bg-[#06B6D4] text-white'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -377,7 +377,7 @@ const GuestRoom: React.FC<{ roomCode: string }> = ({ roomCode }) => {
                 onClick={() => setViewMode('progress')}
                 className={`py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                   viewMode === 'progress'
-                    ? 'bg-[#06B6D4] text-white shadow-sm'
+                    ? 'bg-[#06B6D4] text-white'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -494,7 +494,7 @@ const GuestRoom: React.FC<{ roomCode: string }> = ({ roomCode }) => {
               <div
                 className={
                   viewMode === 'video'
-                    ? 'w-full h-full flex flex-col bg-black rounded-2xl overflow-hidden border border-white/[0.08] shadow-[0_0_60px_-15px_rgba(6,182,212,0.2)]'
+                    ? 'w-full h-full flex flex-col bg-black rounded-2xl overflow-hidden border border-white/[0.08]'
                     : 'hidden'
                 }
               >

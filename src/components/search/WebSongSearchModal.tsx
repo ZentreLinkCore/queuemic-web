@@ -164,7 +164,7 @@ export const WebSongSearchModal: React.FC<WebSongSearchModalProps> = ({
       <GlassCard
         variant="elevated"
         glow="primary"
-        className="w-full max-w-2xl h-[88vh] max-h-[780px] p-0 flex flex-col overflow-hidden border-white/10 shadow-2xl"
+        className="w-full max-w-2xl h-[88vh] max-h-[780px] p-0 flex flex-col overflow-hidden border-white/10"
       >
         {/* Modal Top Header Bar */}
         <div className="px-5 py-4 border-b border-white/[0.08] flex items-center justify-between shrink-0 bg-[#12131C]/90 backdrop-blur-md">
@@ -230,9 +230,9 @@ export const WebSongSearchModal: React.FC<WebSongSearchModalProps> = ({
               <button
                 key={cat.id}
                 onClick={() => handleCategoryClick(cat)}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
                   isActive
-                    ? 'bg-[#8B5CF6] text-white shadow-sm ring-1 ring-[#8B5CF6]/50'
+                    ? 'bg-[#8B5CF6] text-white ring-1 ring-[#8B5CF6]/50'
                     : 'bg-white/[0.04] text-slate-300 hover:text-white hover:bg-white/[0.08] border border-white/5'
                 }`}
               >
@@ -304,7 +304,7 @@ export const WebSongSearchModal: React.FC<WebSongSearchModalProps> = ({
                   key={song.id}
                   className={`p-3 rounded-xl border transition-all flex items-center justify-between gap-3 ${
                     isSelected
-                      ? 'bg-[#8B5CF6]/15 border-[#8B5CF6]/60 shadow-sm'
+                      ? 'bg-[#8B5CF6]/15 border-[#8B5CF6]/60'
                       : queued
                       ? 'bg-emerald-500/[0.03] border-emerald-500/20'
                       : 'bg-white/[0.03] hover:bg-white/[0.06] border-white/5'
@@ -341,7 +341,7 @@ export const WebSongSearchModal: React.FC<WebSongSearchModalProps> = ({
                   <button
                     type="button"
                     onClick={() => handleSelectSong(song)}
-                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shrink-0 shadow-sm active:scale-95 ${
+                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shrink-0 active:scale-95 ${
                       isSelected
                         ? 'bg-[#8B5CF6] text-white ring-2 ring-[#8B5CF6]/50'
                         : queued
@@ -374,7 +374,7 @@ export const WebSongSearchModal: React.FC<WebSongSearchModalProps> = ({
 
         {/* Polished Confirmation Bottom Tray when a song is selected */}
         {selectedSong && (
-          <div className="p-3.5 sm:p-4 bg-[#161828] border-t border-white/10 shrink-0 shadow-2xl animate-slide-up flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+          <div className="p-3.5 sm:p-4 bg-[#161828] border-t border-white/10 shrink-0 animate-slide-up flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
             {/* Selected Song Preview */}
             <div className="flex items-center gap-3 min-w-0 w-full sm:flex-1">
               {selectedSong.thumbnailUrl ? (

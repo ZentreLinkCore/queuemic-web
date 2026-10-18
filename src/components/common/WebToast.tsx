@@ -23,7 +23,7 @@ export const WebToast: React.FC<WebToastProps> = ({ message, onDone }) => {
   return (
     <div
       role="status"
-      className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[80] max-w-[calc(100vw-32px)] px-4 py-2.5 rounded-xl bg-[#12131C]/95 backdrop-blur-xl border border-emerald-400/30 text-emerald-300 text-sm font-semibold flex items-center gap-2 shadow-2xl animate-slide-up"
+      className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[80] max-w-[calc(100vw-32px)] px-4 py-2.5 rounded-xl bg-[#12131C]/95 backdrop-blur-xl border border-emerald-400/30 text-emerald-300 text-sm font-semibold flex items-center gap-2 animate-slide-up"
     >
       <Check className="w-4 h-4 shrink-0" />
       <span className="truncate">{message}</span>

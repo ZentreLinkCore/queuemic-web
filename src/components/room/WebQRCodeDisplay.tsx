@@ -63,7 +63,7 @@ export const WebQRCodeDisplay: React.FC<WebQRCodeDisplayProps> = ({
         <p className="text-xs text-slate-400 mb-6 truncate">{roomName}</p>
 
         {/* QR Code Canvas */}
-        <div className="bg-white p-4 rounded-2xl inline-block shadow-md border border-white/10 mb-6">
+        <div className="bg-white p-4 rounded-2xl inline-block border border-white/10 mb-6">
           <QRCodeSVG
             value={joinUrl}
             size={200}
@@ -81,7 +81,7 @@ export const WebQRCodeDisplay: React.FC<WebQRCodeDisplayProps> = ({
         {/* Copy Link Button */}
         <button
           onClick={handleCopyLink}
-          className="w-full py-3 rounded-xl bg-gradient-to-r from-[#06B6D4] to-[#8B5CF6] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-sm hover:brightness-105 active:scale-95 transition-all cursor-pointer"
+          className="w-full py-3 rounded-xl bg-gradient-to-r from-[#06B6D4] to-[#8B5CF6] text-white font-bold text-sm flex items-center justify-center gap-2 hover:brightness-105 active:scale-95 transition-all cursor-pointer"
         >
           {copied ? (
             <>

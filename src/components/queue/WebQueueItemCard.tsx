@@ -111,7 +111,7 @@ export const WebQueueItemCard: React.FC<WebQueueItemCardProps> = ({
                     e.stopPropagation();
                     onMoveTop();
                   }}
-                  className="px-2 py-0.5 rounded-md text-[10px] font-black tracking-wider text-[#06B6D4] bg-[#06B6D4]/10 hover:bg-[#06B6D4]/20 border border-[#06B6D4]/30 transition-all cursor-pointer shadow-sm active:scale-95"
+                  className="px-2 py-0.5 rounded-md text-[10px] font-black tracking-wider text-[#06B6D4] bg-[#06B6D4]/10 hover:bg-[#06B6D4]/20 border border-[#06B6D4]/30 transition-all cursor-pointer active:scale-95"
                   title="Move to top (Play next)"
                 >
                   ⚡ TOP

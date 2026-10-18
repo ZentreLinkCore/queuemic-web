@@ -218,7 +218,7 @@ export const CreateRoomPage: React.FC = () => {
               </div>
 
               {/* TV Screen Preview Graphic */}
-              <div className="rounded-2xl bg-gradient-to-b from-[#1C1F30] to-[#12131C] p-4 border border-white/10 shadow-[0_0_40px_-10px_rgba(139,92,246,0.25)] mb-5">
+              <div className="rounded-2xl bg-gradient-to-b from-[#1C1F30] to-[#12131C] p-4 border border-white/10 mb-5">
                 <div className="flex items-center justify-between text-[11px] text-slate-400 pb-2 mb-3 border-b border-white/[0.06]">
                   <span className="flex items-center gap-1.5 text-emerald-400 font-semibold font-mono text-[10px]">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> LIVE TV STAGE
@@ -229,7 +229,7 @@ export const CreateRoomPage: React.FC = () => {
                 </div>
                 <div className="aspect-video rounded-xl bg-black/70 border border-white/5 flex flex-col items-center justify-center p-4 text-center relative overflow-hidden">
                   <div className="absolute inset-0 bg-radial from-[#8B5CF6]/15 via-transparent to-transparent pointer-events-none" />
-                  <div className="w-11 h-11 rounded-full bg-[#8B5CF6]/20 border border-[#8B5CF6]/40 flex items-center justify-center mb-2 shadow-lg shadow-[#8B5CF6]/20">
+                  <div className="w-11 h-11 rounded-full bg-[#8B5CF6]/20 border border-[#8B5CF6]/40 flex items-center justify-center mb-2">
                     <Music2 className="w-5 h-5 text-[#C084FC]" />
                   </div>
                   <span className="text-sm font-bold text-white font-['Outfit'] mb-0.5">
@@ -367,7 +367,7 @@ export const CreateRoomPage: React.FC = () => {
                     size="lg"
                     onClick={handleReenterActiveRoom}
                     icon={<Tv className="w-5 h-5 text-white" />}
-                    className="w-full py-3.5 text-sm sm:text-base font-bold flex items-center justify-center gap-2.5 shadow-lg shadow-[#8B5CF6]/20"
+                    className="w-full py-3.5 text-sm sm:text-base font-bold flex items-center justify-center gap-2.5"
                   >
                     Re-enter Host Stage
                   </NeonButton>

@@ -183,7 +183,7 @@ export const WebNicknameModal: React.FC<WebNicknameModalProps> = ({
                 type="submit"
                 variant="primary"
                 size="md"
-                className="w-full font-bold shadow-lg"
+                className="w-full font-bold"
               >
                 Save Profile 🎤
               </NeonButton>

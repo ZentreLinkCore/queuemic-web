@@ -48,11 +48,11 @@ export const WebSongDetailsModal: React.FC<WebSongDetailsModalProps> = ({
     (song?.externalVideoId ? `https://img.youtube.com/vi/${song.externalVideoId}/hqdefault.jpg` : null);
 
   const badgeColorStyles: Record<string, string> = {
-    primary: 'bg-[#8B5CF6] text-white shadow-sm shadow-[#8B5CF6]/30',
-    secondary: 'bg-[#06B6D4] text-black shadow-sm shadow-[#06B6D4]/30',
-    accent: 'bg-[#F59E0B] text-black shadow-sm shadow-[#F59E0B]/30',
-    success: 'bg-[#10B981] text-white shadow-sm shadow-[#10B981]/30',
-    danger: 'bg-[#F43F5E] text-white shadow-sm shadow-[#F43F5E]/30',
+    primary: 'bg-[#8B5CF6] text-white',
+    secondary: 'bg-[#06B6D4] text-black',
+    accent: 'bg-[#F59E0B] text-black',
+    success: 'bg-[#10B981] text-white',
+    danger: 'bg-[#F43F5E] text-white',
   };
 
   const glowStyles: Record<string, 'primary' | 'cyan' | 'pink' | 'danger' | 'none'> = {
@@ -106,7 +106,7 @@ export const WebSongDetailsModal: React.FC<WebSongDetailsModalProps> = ({
           <div className="flex-1 overflow-y-auto pr-1 space-y-4">
             {/* Song Thumbnail */}
             {thumbnail ? (
-              <div className="w-full aspect-video rounded-xl overflow-hidden bg-black border border-white/10 shrink-0 relative group shadow-lg">
+              <div className="w-full aspect-video rounded-xl overflow-hidden bg-black border border-white/10 shrink-0 relative group">
                 <img
                   src={thumbnail}
                   alt={title}

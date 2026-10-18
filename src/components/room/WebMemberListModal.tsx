@@ -68,7 +68,7 @@ export const WebMemberListModal: React.FC<WebMemberListModalProps> = ({
                 <div className="flex items-center gap-3 min-w-0">
                   {/* Avatar */}
                   <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-sm"
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0"
                     style={{ backgroundColor: member.avatarColor || '#8B5CF6' }}
                   >
                     {getInitials(member.nickname)}

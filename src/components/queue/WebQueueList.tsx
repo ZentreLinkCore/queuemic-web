@@ -133,7 +133,7 @@ export const WebQueueList: React.FC<WebQueueListProps> = ({
                   draggingId === item.id
                     ? 'opacity-50'
                     : isDropTarget
-                    ? 'border-t-2 border-[#06B6D4] shadow-[0_-2px_12px_rgba(6,182,212,0.4)]'
+                    ? 'border-t-2 border-[#06B6D4]'
                     : ''
                 }`}
               >
