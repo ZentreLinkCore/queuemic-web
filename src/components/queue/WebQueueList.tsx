@@ -3,7 +3,6 @@ import { Plus } from 'lucide-react';
 import type { KaraokeQueueItem } from '../../types';
 import { WebQueueItemCard } from './WebQueueItemCard';
 import { WebNextUpCard } from '../player/WebNextUpCard';
-import { GlassCard } from '../common/GlassCard';
 
 export interface WebQueueListProps {
   queue: KaraokeQueueItem[];
@@ -37,19 +36,23 @@ export const WebQueueList: React.FC<WebQueueListProps> = ({
   onSkipNext,
   className = '',
 }) => {
-  const isScrollable = className.includes('h-full') || className.includes('flex-1') || className.includes('h-');
   const [draggingId, setDraggingId] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.innerWidth < 1024;
+  });
 
   useEffect(() => {
-    setIsTouchDevice(
-      typeof window !== 'undefined' &&
-      ('ontouchstart' in window || navigator.maxTouchPoints > 0 || window.innerWidth < 1024)
-    );
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const canDrag = canReorder && Boolean(onReorder) && !isTouchDevice;
+  const isScrollable = !isMobile && (className.includes('h-full') || className.includes('flex-1') || className.includes('h-'));
+  const canDrag = canReorder && Boolean(onReorder) && !isMobile;
 
   const handleDrop = (targetIndex: number) => {
     if (draggingId !== null && onReorder) {
@@ -65,13 +68,8 @@ export const WebQueueList: React.FC<WebQueueListProps> = ({
     onRemoveItem?.(item.id);
   };
 
-  return (
-    <GlassCard
-      variant="surface"
-      className={`w-full flex flex-col p-4 sm:p-5 border-white/[0.08] ${
-        isScrollable ? 'h-full min-h-0 flex-1' : 'h-auto'
-      } ${className}`}
-    >
+  const queueBody = (
+    <>
       {/* Optional Next Up Card on top of list if provided */}
       {nextSong && (
         <div className="mb-3.5 shrink-0">
@@ -79,8 +77,12 @@ export const WebQueueList: React.FC<WebQueueListProps> = ({
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex items-center justify-between pb-3 border-b border-white/[0.08] mb-3 shrink-0">
+      {/* Header matching mobapp */}
+      <div
+        className={`flex items-center justify-between ${
+          isMobile ? 'pb-2 mb-2 pt-1' : 'pb-3 border-b border-white/[0.08] mb-3'
+        } shrink-0`}
+      >
         <div>
           <h3 className="text-base font-bold text-white font-['Outfit'] tracking-normal">
             {title || (isHost ? 'Host Queue Manager' : 'Up Next in Queue')}
@@ -116,10 +118,10 @@ export const WebQueueList: React.FC<WebQueueListProps> = ({
           <p className="text-xs text-[#94A3B8] max-w-xs leading-relaxed">Search songs to get the party started!</p>
         </div>
       ) : (
-        /* List of tracks - Scrollable with custom styled scrollbar */
+        /* List of tracks - Scrollable with custom scrollbar on desktop, fluid flow on mobile */
         <div
-          className={`space-y-2 pr-1.5 touch-pan-y ${
-            isScrollable ? 'overflow-y-auto flex-1 min-h-0 overscroll-contain' : ''
+          className={`space-y-2.5 touch-pan-y ${
+            isScrollable ? 'lg:overflow-y-auto lg:flex-1 lg:min-h-0 lg:overscroll-contain lg:pr-1.5' : ''
           }`}
           style={{ touchAction: 'pan-y' }}
         >
@@ -163,6 +165,16 @@ export const WebQueueList: React.FC<WebQueueListProps> = ({
           })}
         </div>
       )}
-    </GlassCard>
+    </>
+  );
+
+  return (
+    <div
+      className={`w-full flex flex-col lg:bg-[rgba(26,29,44,0.72)] lg:backdrop-blur-[12px] lg:border lg:border-white/[0.08] lg:rounded-3xl lg:p-5 ${
+        isScrollable ? 'lg:h-full lg:min-h-0 lg:flex-1' : 'h-auto'
+      } ${className}`}
+    >
+      {queueBody}
+    </div>
   );
 };

@@ -501,7 +501,7 @@ const GuestRoom: React.FC<{ roomCode: string }> = ({ roomCode }) => {
         {!isFullscreen && (
           <div
             style={{ touchAction: 'pan-y' }}
-            className="flex-1 min-h-0 w-full lg:w-[380px] xl:w-[440px] shrink-0 lg:h-full flex flex-col overflow-y-auto overscroll-contain p-3 sm:p-4 lg:p-0 space-y-3 pb-6 lg:pb-0 touch-pan-y"
+            className="flex-1 min-h-0 w-full lg:w-[380px] xl:w-[440px] shrink-0 lg:h-full flex flex-col overflow-y-auto overscroll-contain p-3 sm:p-4 lg:p-0 space-y-3 pb-16 lg:pb-0 touch-pan-y"
           >
             {/* Next Up Overlay Card */}
             {queue[0] && (
