@@ -288,12 +288,62 @@ export const WebVideoPlayer: React.FC<WebVideoPlayerProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleToggleFullscreen]);
 
+  const pointerDownPosRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const justTappedRef = useRef<boolean>(false);
+
+  const handleSurfacePointerDown = useCallback((e: React.PointerEvent) => {
+    if ((e.target as HTMLElement).closest('button, a, input, [role="button"], [data-no-toggle]')) {
+      return;
+    }
+    pointerDownPosRef.current = { x: e.clientX, y: e.clientY, time: Date.now() };
+  }, []);
+
+  const handleSurfacePointerUp = useCallback((e: React.PointerEvent) => {
+    if (!pointerDownPosRef.current) return;
+    const start = pointerDownPosRef.current;
+    pointerDownPosRef.current = null;
+
+    if ((e.target as HTMLElement).closest('button, a, input, [role="button"], [data-no-toggle]')) {
+      return;
+    }
+
+    const dx = Math.abs(e.clientX - start.x);
+    const dy = Math.abs(e.clientY - start.y);
+    const dt = Date.now() - start.time;
+
+    // Must be a clean tap/click (not a scroll gesture or long hold)
+    if (dx < 12 && dy < 12 && dt < 450) {
+      justTappedRef.current = true;
+      setTimeout(() => {
+        justTappedRef.current = false;
+      }, 350);
+
+      wakeControls();
+
+      if (clickTimeoutRef.current) {
+        clearTimeout(clickTimeoutRef.current);
+        clickTimeoutRef.current = null;
+        return;
+      }
+
+      clickTimeoutRef.current = setTimeout(() => {
+        clickTimeoutRef.current = null;
+        onPlayPause?.();
+      }, 180);
+    }
+  }, [onPlayPause, wakeControls]);
+
   // Discriminate single-click (play/pause) from double-click (fullscreen toggle)
   const handleVideoSurfaceClick = useCallback(
     (e: React.MouseEvent) => {
       if ((e.target as HTMLElement).closest('button, a, input, [role="button"], [data-no-toggle]')) {
         return;
       }
+      if (justTappedRef.current) {
+        return;
+      }
+
+      wakeControls();
 
       if (clickTimeoutRef.current) {
         // Second click arrived within interval -> cancel pending play/pause so double-click handles it
@@ -305,9 +355,9 @@ export const WebVideoPlayer: React.FC<WebVideoPlayerProps> = ({
       clickTimeoutRef.current = setTimeout(() => {
         clickTimeoutRef.current = null;
         onPlayPause?.();
-      }, 220);
+      }, 180);
     },
-    [onPlayPause]
+    [onPlayPause, wakeControls]
   );
 
   const handleVideoSurfaceDoubleClick = useCallback(
@@ -709,13 +759,16 @@ export const WebVideoPlayer: React.FC<WebVideoPlayerProps> = ({
   return (
     <div
       ref={wrapperRef}
-      onMouseMove={wakeControls}
+      onPointerMove={(e) => {
+        if (e.pointerType !== 'touch') wakeControls();
+      }}
       onMouseEnter={wakeControls}
       onMouseLeave={() => {
         if (isPlaying) setShowControls(false);
       }}
       onDoubleClick={handleVideoSurfaceDoubleClick}
-      className={`relative w-full overflow-hidden bg-black transition-all duration-300 select-none ${
+      style={{ touchAction: 'none' }}
+      className={`relative w-full overflow-hidden bg-black transition-all duration-300 select-none touch-none ${
         isFullscreen
           ? 'fixed inset-0 z-50 rounded-none border-none h-screen w-screen'
           : 'w-full h-full min-h-0 bg-black'
@@ -723,9 +776,12 @@ export const WebVideoPlayer: React.FC<WebVideoPlayerProps> = ({
     >
       {/* 16:9 Natural Full TV Video Frame without crop or zoom */}
       <div
+        onPointerDown={handleSurfacePointerDown}
+        onPointerUp={handleSurfacePointerUp}
         onClick={handleVideoSurfaceClick}
         onDoubleClick={handleVideoSurfaceDoubleClick}
-        className="w-full h-full relative flex items-center justify-center overflow-hidden bg-black cursor-pointer"
+        style={{ touchAction: 'none' }}
+        className="w-full h-full relative flex items-center justify-center overflow-hidden bg-black cursor-pointer touch-none"
         title={
           isFullscreen
             ? isPlaying
@@ -804,9 +860,12 @@ export const WebVideoPlayer: React.FC<WebVideoPlayerProps> = ({
       {/* Paused Overlay - Clean minimal indicator without double overlay or heavy shadows */}
       {!isPlaying && videoPhase !== 'loading' && !webNeedsTap && (
         <div
+          onPointerDown={handleSurfacePointerDown}
+          onPointerUp={handleSurfacePointerUp}
           onClick={handleVideoSurfaceClick}
           onDoubleClick={handleVideoSurfaceDoubleClick}
-          className="absolute inset-0 z-30 bg-[#0A0A12]/85 backdrop-blur-md flex flex-col items-center justify-center cursor-pointer select-none animate-fade-in"
+          style={{ touchAction: 'none' }}
+          className="absolute inset-0 z-30 bg-[#0A0A12]/85 backdrop-blur-md flex flex-col items-center justify-center cursor-pointer select-none animate-fade-in touch-none"
           title={
             isFullscreen
               ? 'Click to play • Double-click to exit fullscreen'

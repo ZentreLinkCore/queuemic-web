@@ -263,9 +263,13 @@ const GuestRoom: React.FC<{ roomCode: string }> = ({ roomCode }) => {
   }, [setFullscreen]);
 
   return (
-    <div className="min-h-screen h-[100dvh] w-screen bg-[#0D0E15] text-white flex flex-col overflow-hidden select-none">
+    <div className="fixed inset-0 h-full w-full bg-[#0D0E15] text-white flex flex-col overflow-hidden select-none">
       {/* Top Bar */}
-      <header className="h-14 px-3 sm:px-6 bg-[#12131C]/90 backdrop-blur-md border-b border-white/[0.08] flex items-center justify-between shrink-0 z-30 transition-all">
+      <header
+        className={`h-14 px-3 sm:px-6 bg-[#12131C]/90 backdrop-blur-md border-b border-white/[0.08] flex items-center justify-between shrink-0 z-30 transition-all ${
+          isFullscreen ? 'hidden' : ''
+        }`}
+      >
         <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
           {/* TV Icon Box: Shown on both Mobile and Web View */}
           <div className="flex w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#06B6D4]/15 border border-[#06B6D4]/30 items-center justify-center shrink-0">
@@ -354,46 +358,76 @@ const GuestRoom: React.FC<{ roomCode: string }> = ({ roomCode }) => {
       </header>
       <WebConnectionBanner />
 
-      {/* Mobile View (< lg): Fixed Edge-to-Edge Video/Progress at top, scrollable Queue below (No card wrapper) */}
-      {isMobile && !isFullscreen ? (
-        <div className="flex-1 flex flex-col min-h-0 w-full overflow-hidden">
-          {/* Mobile View Switcher Tab Bar (Dedicated, prominent, uncrowded) */}
-          <div className="flex md:hidden items-center justify-center px-4 py-2 bg-[#12131C] border-b border-white/[0.08] shrink-0">
-            <div className="grid grid-cols-2 w-full max-w-xs p-1 bg-white/[0.04] rounded-xl border border-white/10">
-              <button
-                type="button"
-                onClick={() => setViewMode('video')}
-                className={`py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                  viewMode === 'video'
-                    ? 'bg-[#06B6D4] text-white'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <Tv className="w-3.5 h-3.5" />
-                <span>Video Stage</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode('progress')}
-                className={`py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                  viewMode === 'progress'
-                    ? 'bg-[#06B6D4] text-white'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <Activity className="w-3.5 h-3.5" />
-                <span>Live Progress</span>
-              </button>
+      {/* Main Container: Single WebVideoPlayer instance persisted across mobile, desktop, and fullscreen */}
+      <main
+        className={`flex-1 min-h-0 w-full transition-all ${
+          isFullscreen
+            ? 'p-0 m-0 max-w-none'
+            : 'flex flex-col lg:flex-row lg:p-4 md:p-5 lg:gap-4 lg:h-[calc(100vh-56px)] max-w-[1920px] mx-auto overflow-hidden'
+        }`}
+      >
+        {/* Left Column on Desktop / Top Pinned Section on Mobile */}
+        <div
+          className={
+            isFullscreen
+              ? 'w-full h-full'
+              : 'shrink-0 lg:flex-1 lg:h-full min-h-0 min-w-0 flex flex-col'
+          }
+        >
+          {/* Mobile View Switcher Tab Bar (Dedicated, uncrowded) */}
+          {!isFullscreen && (
+            <div className="flex md:hidden items-center justify-center px-4 py-2 bg-[#12131C] border-b border-white/[0.08] shrink-0">
+              <div className="grid grid-cols-2 w-full max-w-xs p-1 bg-white/[0.04] rounded-xl border border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('video')}
+                  className={`py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    viewMode === 'video'
+                      ? 'bg-[#06B6D4] text-white'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Tv className="w-3.5 h-3.5" />
+                  <span>Video Stage</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('progress')}
+                  className={`py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    viewMode === 'progress'
+                      ? 'bg-[#06B6D4] text-white'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Activity className="w-3.5 h-3.5" />
+                  <span>Live Progress</span>
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Edge-to-Edge Video Player & Outside Controls (PINNED - kept mounted so YouTube iframe never reloads on tab switch) */}
-          <div className={viewMode === 'video' ? 'shrink-0 flex flex-col' : 'hidden'}>
-            <div className="w-full aspect-video bg-black relative overflow-hidden">
+          <div
+            className={
+              isFullscreen
+                ? 'w-full h-full'
+                : 'w-full h-full flex flex-col bg-black lg:rounded-2xl overflow-hidden lg:border lg:border-white/[0.08]'
+            }
+          >
+            {/* Video Player Container (Kept in DOM to prevent YouTube reload on tab or fullscreen toggle) */}
+            <div
+              style={{ touchAction: 'none' }}
+              className={
+                viewMode === 'video' || isFullscreen
+                  ? isFullscreen
+                    ? 'w-full h-full touch-none'
+                    : 'w-full aspect-video lg:aspect-auto lg:flex-1 lg:min-h-0 relative overflow-hidden bg-black touch-none'
+                  : 'hidden'
+              }
+            >
               <WebVideoPlayer
                 currentSong={currentPlaying}
                 playbackState={playbackState}
-                isFullscreen={false}
+                isFullscreen={isFullscreen}
                 roomCode={roomCode}
                 nextSong={queue[0] || null}
                 queueCount={queue.length}
@@ -417,41 +451,58 @@ const GuestRoom: React.FC<{ roomCode: string }> = ({ roomCode }) => {
               />
             </div>
 
-            {/* Stage Live & Controls directly below Video */}
-            <div className="shrink-0">
-              <WebPlaybackControls
-                currentSong={currentPlaying}
-                playbackState={playbackState}
-                onPlayPause={canControlPlayback ? handlePlayPause : undefined}
-                onSkip={canControlPlayback ? handleSkip : undefined}
-                onSeek={canControlPlayback ? handleSeek : undefined}
-                onToggleFullscreen={handleToggleFullscreen}
-                isFullscreen={false}
-                currentTimeSeconds={currentTimeSeconds}
-                durationSeconds={durationSeconds}
-                canControlPlayback={canControlPlayback}
-                isHost={false}
-                showOutsideControls={true}
-              />
-            </div>
-          </div>
+            {/* Playback Controls directly below Video */}
+            {!isFullscreen && viewMode === 'video' && (
+              <div className="shrink-0" style={{ touchAction: 'pan-x' }}>
+                <WebPlaybackControls
+                  currentSong={currentPlaying}
+                  playbackState={playbackState}
+                  onPlayPause={canControlPlayback ? handlePlayPause : undefined}
+                  onSkip={canControlPlayback ? handleSkip : undefined}
+                  onSeek={canControlPlayback ? handleSeek : undefined}
+                  onToggleFullscreen={handleToggleFullscreen}
+                  isFullscreen={false}
+                  currentTimeSeconds={currentTimeSeconds}
+                  durationSeconds={durationSeconds}
+                  canControlPlayback={canControlPlayback}
+                  isHost={false}
+                  showOutsideControls={isMobile}
+                />
+              </div>
+            )}
 
-          {/* Progress Bar View Mode (Kept in DOM, toggled via hidden) */}
-          <div className={viewMode === 'progress' ? 'shrink-0 p-3 bg-[#12131C] border-b border-white/[0.08]' : 'hidden'}>
-            <WebGuestProgressBar
-              currentSong={currentPlaying}
-              playbackState={playbackState}
-              syncAnchor={syncAnchor}
-              currentTimeSeconds={currentTimeSeconds}
-              durationSeconds={durationSeconds}
-              canControlPlayback={canControlPlayback}
-              onPlayPause={canControlPlayback ? handlePlayPause : undefined}
-              onSkip={canControlPlayback ? handleSkip : undefined}
-            />
+            {/* Progress Bar View Mode (Kept in DOM, toggled via hidden) */}
+            {!isFullscreen && (
+              <div
+                className={
+                  viewMode === 'progress'
+                    ? 'w-full shrink-0 lg:flex-1 lg:h-full flex items-center justify-center p-4 lg:p-6 bg-[#12131C] border-b lg:border-none border-white/[0.08]'
+                    : 'hidden'
+                }
+              >
+                <div className="max-w-xl w-full">
+                  <WebGuestProgressBar
+                    currentSong={currentPlaying}
+                    playbackState={playbackState}
+                    syncAnchor={syncAnchor}
+                    currentTimeSeconds={currentTimeSeconds}
+                    durationSeconds={durationSeconds}
+                    canControlPlayback={canControlPlayback}
+                    onPlayPause={canControlPlayback ? handlePlayPause : undefined}
+                    onSkip={canControlPlayback ? handleSkip : undefined}
+                  />
+                </div>
+              </div>
+            )}
           </div>
+        </div>
 
-          {/* Queue Section - ONLY THIS SCROLLS! */}
-          <div className="flex-1 min-h-0 w-full overflow-y-auto overscroll-contain p-3 sm:p-4 space-y-3 pb-5">
+        {/* Right Column on Desktop / Scrollable Queue Section on Mobile */}
+        {!isFullscreen && (
+          <div
+            style={{ touchAction: 'pan-y' }}
+            className="flex-1 min-h-0 w-full lg:w-[380px] xl:w-[440px] shrink-0 lg:h-full flex flex-col overflow-y-auto overscroll-contain p-3 sm:p-4 lg:p-0 space-y-3 pb-6 lg:pb-0 touch-pan-y"
+          >
             {/* Next Up Overlay Card */}
             {queue[0] && (
               <div className="shrink-0">
@@ -475,122 +526,11 @@ const GuestRoom: React.FC<{ roomCode: string }> = ({ roomCode }) => {
               onReorder={handleReorderItem}
               onRemoveItem={handleRemoveItem}
               onOpenSearch={() => setIsSearchModalVisible(true)}
+              className="lg:flex-1 lg:min-h-0 lg:h-full"
             />
           </div>
-        </div>
-      ) : (
-        /* Desktop View (>= lg): Balanced equal-height 2-column dashboard layout matching HostPlayerPage */
-        <main
-          className={`flex-1 min-h-0 w-full transition-all ${
-            isFullscreen
-              ? 'p-0 m-0 max-w-none'
-              : 'p-3 sm:p-4 md:p-5 flex flex-col lg:flex-row gap-4 h-[calc(100vh-56px)] max-w-[1920px] mx-auto overflow-hidden'
-          }`}
-        >
-          {/* Left Column: Video Stage / Progress + Up Next Card */}
-          <div className={isFullscreen ? 'w-full h-full' : 'flex-1 h-full min-h-0 min-w-0 flex flex-col gap-3'}>
-            <div className="flex-1 min-h-0 w-full overflow-hidden flex flex-col">
-              {/* Video Player Container (Kept mounted to prevent YouTube iframe reload on tab switch) */}
-              <div
-                className={
-                  viewMode === 'video'
-                    ? 'w-full h-full flex flex-col bg-black rounded-2xl overflow-hidden border border-white/[0.08]'
-                    : 'hidden'
-                }
-              >
-                <div className="flex-1 min-h-0 w-full relative overflow-hidden bg-black">
-                  <WebVideoPlayer
-                    currentSong={currentPlaying}
-                    playbackState={playbackState}
-                    isFullscreen={isFullscreen}
-                    roomCode={roomCode}
-                    nextSong={queue[0] || null}
-                    queueCount={queue.length}
-                    onOpenSearch={() => setIsSearchModalVisible(true)}
-                    onSongEnd={handleSkip}
-                    onPlayPause={canControlPlayback ? handlePlayPause : undefined}
-                    onSkip={canControlPlayback ? handleSkip : undefined}
-                    onSeek={canControlPlayback ? handleSeek : undefined}
-                    seekTarget={seekTarget}
-                    currentTimeSeconds={currentTimeSeconds}
-                    durationSeconds={durationSeconds}
-                    syncAnchor={syncAnchor}
-                    followHost={true}
-                    muted={isMuted}
-                    onToggleMute={() => setIsMuted(!isMuted)}
-                    onToggleFullscreen={handleToggleFullscreen}
-                    onTimeUpdate={(cur, dur) => {
-                      setCurrentTime(cur);
-                      if (dur > 0) setDuration(dur);
-                    }}
-                  />
-                </div>
-
-                {!isFullscreen && (
-                  <div className="shrink-0">
-                    <WebPlaybackControls
-                      currentSong={currentPlaying}
-                      playbackState={playbackState}
-                      isHost={false}
-                      showOutsideControls={false}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Progress Bar View Mode (Shown when viewMode === 'progress') */}
-              <div
-                className={
-                  viewMode === 'progress'
-                    ? 'w-full h-full flex items-center justify-center p-6 bg-[#12131C] rounded-2xl border border-white/[0.08]'
-                    : 'hidden'
-                }
-              >
-                <div className="max-w-xl w-full">
-                  <WebGuestProgressBar
-                    currentSong={currentPlaying}
-                    playbackState={playbackState}
-                    syncAnchor={syncAnchor}
-                    currentTimeSeconds={currentTimeSeconds}
-                    durationSeconds={durationSeconds}
-                    canControlPlayback={canControlPlayback}
-                    onPlayPause={handlePlayPause}
-                    onSkip={handleSkip}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column: Up Next Card + Party Queue Sidebar matching HostPlayerPage */}
-          {!isFullscreen && (
-            <div className="w-full lg:w-[380px] xl:w-[440px] shrink-0 h-full min-h-0 flex flex-col gap-3">
-              {queue[0] && (
-                <div className="shrink-0">
-                  <WebNextUpCard
-                    nextSong={queue[0]}
-                    onSkip={canControlPlayback ? handleSkip : undefined}
-                    onOpenSearch={() => setIsSearchModalVisible(true)}
-                  />
-                </div>
-              )}
-              <WebQueueList
-                queue={queue}
-                canReorder={canReorder}
-                memberId={memberId}
-                isHost={false}
-                title="Up Next in Queue"
-                subtitle={canReorder ? 'Reorder songs or jump to Top' : `${queue.length} songs waiting`}
-                onMoveItem={handleMoveItem}
-                onReorder={handleReorderItem}
-                onRemoveItem={handleRemoveItem}
-                onOpenSearch={() => setIsSearchModalVisible(true)}
-                className="flex-1 min-h-0 h-full"
-              />
-            </div>
-          )}
-        </main>
-      )}
+        )}
+      </main>
 
       {/* Modals */}
       <WebQRCodeDisplay

@@ -268,7 +268,7 @@ const HostPlayerRoom: React.FC<{ roomCode: string }> = ({ roomCode }) => {
   }, [setFullscreen]);
 
   return (
-    <div className="min-h-screen h-[100dvh] w-screen bg-[#0D0E15] text-white flex flex-col overflow-hidden select-none">
+    <div className="fixed inset-0 h-full w-full bg-[#0D0E15] text-white flex flex-col overflow-hidden select-none">
       {/* Top Bar (Hidden when in TV Fullscreen mode) */}
       <header
         className={`h-14 px-3 sm:px-6 bg-[#12131C]/90 backdrop-blur-md border-b border-white/[0.08] flex items-center justify-between shrink-0 z-30 transition-all ${
@@ -352,62 +352,100 @@ const HostPlayerRoom: React.FC<{ roomCode: string }> = ({ roomCode }) => {
       </header>
       <WebConnectionBanner />
 
-      {/* Mobile View (< lg): Fixed Video & Controls at top, scrollable Queue Manager below */}
-      {isMobile && !isFullscreen ? (
-        <div className="flex-1 flex flex-col min-h-0 w-full overflow-hidden">
-          {/* Edge-to-Edge 16:9 Video Player (PINNED - does not scroll) */}
-          <div className="w-full aspect-video bg-black shrink-0 relative overflow-hidden">
-            <WebVideoPlayer
-              currentSong={currentPlaying}
-              playbackState={playbackState}
-              isFullscreen={false}
-              roomCode={roomCode}
-              nextSong={queue[0] || null}
-              queueCount={queue.length}
-              onOpenSearch={() => setIsSearchModalVisible(true)}
-              onSongEnd={handleNext}
-              onPlayPause={handlePlayPause}
-              onSkip={handleSkip}
-              onSeek={handleSeek}
-              seekTarget={seekTarget}
-              onToggleFullscreen={handleToggleFullscreen}
-              currentTimeSeconds={currentTimeSeconds}
-              durationSeconds={durationSeconds}
-              syncAnchor={syncAnchor}
-              onTimeUpdate={(cur, dur) => {
-                setCurrentTime(cur);
-                setDuration(dur);
-              }}
-            />
-          </div>
+      {/* Main Content: Single WebVideoPlayer instance persisted across mobile, desktop, and fullscreen */}
+      <main
+        className={`flex-1 min-h-0 w-full transition-all ${
+          isFullscreen
+            ? 'p-0 m-0 max-w-none'
+            : 'flex flex-col lg:flex-row lg:p-4 md:p-5 lg:gap-4 lg:h-[calc(100vh-56px)] max-w-[1920px] mx-auto overflow-hidden'
+        }`}
+      >
+        {/* Left Column on Desktop / Top Pinned Player on Mobile */}
+        <div
+          className={
+            isFullscreen
+              ? 'w-full h-full'
+              : 'shrink-0 lg:flex-1 lg:h-full min-h-0 min-w-0 flex flex-col'
+          }
+        >
+          <div
+            className={
+              isFullscreen
+                ? 'w-full h-full'
+                : 'w-full h-full flex flex-col bg-black lg:rounded-2xl overflow-hidden lg:border lg:border-white/[0.08]'
+            }
+          >
+            {/* Video Player Container */}
+            <div
+              style={{ touchAction: 'none' }}
+              className={
+                isFullscreen
+                  ? 'w-full h-full'
+                  : 'w-full aspect-video lg:aspect-auto lg:flex-1 lg:min-h-0 relative overflow-hidden bg-black touch-none'
+              }
+            >
+              <WebVideoPlayer
+                currentSong={currentPlaying}
+                playbackState={playbackState}
+                isFullscreen={isFullscreen}
+                roomCode={roomCode}
+                nextSong={queue[0] || null}
+                queueCount={queue.length}
+                onOpenSearch={() => setIsSearchModalVisible(true)}
+                onOpenQueue={() => setIsQueueDrawerOpen(true)}
+                onSongEnd={handleNext}
+                onPlayPause={handlePlayPause}
+                onSkip={handleSkip}
+                onSeek={handleSeek}
+                seekTarget={seekTarget}
+                onToggleFullscreen={handleToggleFullscreen}
+                currentTimeSeconds={currentTimeSeconds}
+                durationSeconds={durationSeconds}
+                syncAnchor={syncAnchor}
+                onTimeUpdate={(cur, dur) => {
+                  setCurrentTime(cur);
+                  setDuration(dur);
+                }}
+              />
+            </div>
 
-          {/* Mobapp PlaybackControls Deck directly below Video (PINNED - does not scroll) */}
-          <div className="shrink-0">
-            <WebPlaybackControls
-              currentSong={currentPlaying}
-              playbackState={playbackState}
-              onPlayPause={handlePlayPause}
-              onSkip={handleSkip}
-              onSeek={handleSeek}
-              onToggleFullscreen={handleToggleFullscreen}
-              isFullscreen={false}
-              currentTimeSeconds={currentTimeSeconds}
-              durationSeconds={durationSeconds}
-              isHost={true}
-              canControlPlayback={true}
-              showOutsideControls={true}
-            />
+            {/* Playback Controls directly below Video */}
+            {!isFullscreen && (
+              <div className="shrink-0" style={{ touchAction: 'pan-x' }}>
+                <WebPlaybackControls
+                  currentSong={currentPlaying}
+                  playbackState={playbackState}
+                  onPlayPause={handlePlayPause}
+                  onSkip={handleSkip}
+                  onSeek={handleSeek}
+                  onToggleFullscreen={handleToggleFullscreen}
+                  isFullscreen={false}
+                  currentTimeSeconds={currentTimeSeconds}
+                  durationSeconds={durationSeconds}
+                  isHost={true}
+                  canControlPlayback={true}
+                  showOutsideControls={isMobile}
+                />
+              </div>
+            )}
           </div>
+        </div>
 
-          {/* Queue Section - ONLY THIS SCROLLS! */}
-          <div className="flex-1 min-h-0 w-full overflow-y-auto overscroll-contain p-3 sm:p-4 space-y-3 pb-5">
+        {/* Right Column on Desktop / Scrollable Queue Section on Mobile */}
+        {!isFullscreen && (
+          <div
+            style={{ touchAction: 'pan-y' }}
+            className="flex-1 min-h-0 w-full lg:w-[380px] xl:w-[440px] shrink-0 lg:h-full flex flex-col overflow-y-auto overscroll-contain p-3 sm:p-4 lg:p-0 space-y-3 pb-6 lg:pb-0 touch-pan-y"
+          >
             {/* Next Up Overlay Card */}
             {queue[0] && (
-              <WebNextUpCard
-                nextSong={queue[0]}
-                onSkip={handleSkip}
-                onOpenSearch={() => setIsSearchModalVisible(true)}
-              />
+              <div className="shrink-0">
+                <WebNextUpCard
+                  nextSong={queue[0]}
+                  onSkip={handleSkip}
+                  onOpenSearch={() => setIsSearchModalVisible(true)}
+                />
+              </div>
             )}
 
             {/* Host Queue Manager */}
@@ -421,94 +459,11 @@ const HostPlayerRoom: React.FC<{ roomCode: string }> = ({ roomCode }) => {
               onReorder={handleReorderItem}
               onRemoveItem={handleRemoveItem}
               onOpenSearch={() => setIsSearchModalVisible(true)}
+              className="lg:flex-1 lg:min-h-0 lg:h-full"
             />
           </div>
-        </div>
-      ) : (
-        /* Desktop / Fullscreen TV View (lg:): Balanced equal-height 2-column layout */
-        <main
-          className={`flex-1 min-h-0 w-full transition-all ${
-            isFullscreen
-              ? 'p-0 m-0 max-w-none'
-              : 'p-3 sm:p-4 md:p-5 flex flex-col lg:flex-row gap-4 h-[calc(100vh-56px)] max-w-[1920px] mx-auto overflow-hidden'
-          }`}
-        >
-          {/* Left Column: Video Stage with Stage Live below */}
-          <div className={isFullscreen ? 'w-full h-full' : 'flex-1 h-full min-h-0 min-w-0 flex flex-col'}>
-            <div
-              className={
-                isFullscreen
-                  ? 'w-full h-full'
-                  : 'w-full h-full flex flex-col bg-black rounded-2xl overflow-hidden border border-white/[0.08]'
-              }
-            >
-              <div className="flex-1 min-h-0 w-full relative overflow-hidden bg-black">
-                <WebVideoPlayer
-                  currentSong={currentPlaying}
-                  playbackState={playbackState}
-                  isFullscreen={isFullscreen}
-                  roomCode={roomCode}
-                  nextSong={queue[0] || null}
-                  queueCount={queue.length}
-                  onOpenSearch={() => setIsSearchModalVisible(true)}
-                  onOpenQueue={() => setIsQueueDrawerOpen(true)}
-                  onSongEnd={handleNext}
-                  onPlayPause={handlePlayPause}
-                  onSkip={handleSkip}
-                  onSeek={handleSeek}
-                  seekTarget={seekTarget}
-                  onToggleFullscreen={handleToggleFullscreen}
-                  currentTimeSeconds={currentTimeSeconds}
-                  durationSeconds={durationSeconds}
-                  syncAnchor={syncAnchor}
-                  onTimeUpdate={(cur, dur) => {
-                    setCurrentTime(cur);
-                    setDuration(dur);
-                  }}
-                />
-              </div>
-
-              {!isFullscreen && (
-                <div className="shrink-0">
-                  <WebPlaybackControls
-                    currentSong={currentPlaying}
-                    playbackState={playbackState}
-                    isHost={true}
-                    showOutsideControls={false}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Right Column: Up Next Card + Party Queue Manager Sidebar */}
-          {!isFullscreen && (
-            <div className="w-full lg:w-[380px] xl:w-[440px] shrink-0 h-full min-h-0 flex flex-col gap-3">
-              {queue[0] && (
-                <div className="shrink-0">
-                  <WebNextUpCard
-                    nextSong={queue[0]}
-                    onSkip={handleSkip}
-                    onOpenSearch={() => setIsSearchModalVisible(true)}
-                  />
-                </div>
-              )}
-              <WebQueueList
-                queue={queue}
-                canReorder={true}
-                isHost={true}
-                title="Host Queue Manager"
-                subtitle="Reorder, skip, or remove songs in queue"
-                onMoveItem={handleMoveItem}
-                onReorder={handleReorderItem}
-                onRemoveItem={handleRemoveItem}
-                onOpenSearch={() => setIsSearchModalVisible(true)}
-                className="flex-1 min-h-0 h-full"
-              />
-            </div>
-          )}
-        </main>
-      )}
+        )}
+      </main>
 
       {/* Slide-out Queue Drawer in TV View */}
       {isQueueDrawerOpen && (

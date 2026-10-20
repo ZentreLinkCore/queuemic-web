@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import type { KaraokeQueueItem } from '../../types';
 import { WebQueueItemCard } from './WebQueueItemCard';
@@ -40,7 +40,16 @@ export const WebQueueList: React.FC<WebQueueListProps> = ({
   const isScrollable = className.includes('h-full') || className.includes('flex-1') || className.includes('h-');
   const [draggingId, setDraggingId] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  const canDrag = canReorder && Boolean(onReorder);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+
+  useEffect(() => {
+    setIsTouchDevice(
+      typeof window !== 'undefined' &&
+      ('ontouchstart' in window || navigator.maxTouchPoints > 0 || window.innerWidth < 1024)
+    );
+  }, []);
+
+  const canDrag = canReorder && Boolean(onReorder) && !isTouchDevice;
 
   const handleDrop = (targetIndex: number) => {
     if (draggingId !== null && onReorder) {
@@ -109,9 +118,10 @@ export const WebQueueList: React.FC<WebQueueListProps> = ({
       ) : (
         /* List of tracks - Scrollable with custom styled scrollbar */
         <div
-          className={`space-y-2 pr-1.5 ${
-            isScrollable ? 'overflow-y-auto flex-1 min-h-0 overscroll-contain' : 'overflow-y-auto max-h-[60vh]'
+          className={`space-y-2 pr-1.5 touch-pan-y ${
+            isScrollable ? 'overflow-y-auto flex-1 min-h-0 overscroll-contain' : ''
           }`}
+          style={{ touchAction: 'pan-y' }}
         >
           {queue.map((item, index) => {
             const isMySong = memberId && item.requestedByMemberId === memberId;
@@ -129,7 +139,8 @@ export const WebQueueList: React.FC<WebQueueListProps> = ({
                 onDragLeave={canDrag ? () => setDragOverIndex(null) : undefined}
                 onDrop={canDrag ? (e) => { e.preventDefault(); setDragOverIndex(null); handleDrop(index); } : undefined}
                 onDragEnd={canDrag ? () => { setDraggingId(null); setDragOverIndex(null); } : undefined}
-                className={`rounded-2xl transition-all ${
+                style={{ touchAction: 'pan-y' }}
+                className={`rounded-2xl transition-all touch-pan-y ${
                   draggingId === item.id
                     ? 'opacity-50'
                     : isDropTarget
