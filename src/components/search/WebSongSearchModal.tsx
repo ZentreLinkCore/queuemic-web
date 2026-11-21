@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, X, Loader2, Music, Check, Plus } from 'lucide-react';
 import type { Song } from '../../types';
 import { songApi } from '../../api/songApi';
 import { queueApi } from '../../api/queueApi';
-import { useDebounce } from '../../hooks/useDebounce';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useQueueStore } from '../../store/useQueueStore';
 import { GlassCard } from '../common/GlassCard';
@@ -45,15 +44,65 @@ export const WebSongSearchModal: React.FC<WebSongSearchModalProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [recentlyQueuedIds, setRecentlyQueuedIds] = useState<Set<number>>(new Set());
 
-  const debouncedQuery = useDebounce(query, 300);
+  // Session-level client cache keyed by normalized query so reopening or switching chips avoids repeat API calls
+  const cacheRef = useRef<Map<string, Song[]>>(new Map());
+  const requestIdRef = useRef(0);
+  const hasLoadedInitialRef = useRef(false);
+
+  const executeSearch = useCallback(
+    async (rawQuery: string) => {
+      const trimmed = rawQuery.trim();
+      if (trimmed.length === 1) {
+        setErrorMessage('Enter at least 2 characters to search.');
+        return;
+      }
+
+      const cacheKey = trimmed.toLowerCase().replace(/\s+/g, ' ');
+      setSelectedSong(null);
+      const cached = cacheRef.current.get(cacheKey);
+      if (cached) {
+        setErrorMessage(null);
+        setResults(cached);
+        setLoading(false);
+        return;
+      }
+
+      const requestId = ++requestIdRef.current;
+      setLoading(true);
+      setErrorMessage(null);
+      try {
+        const res = await songApi.searchSongs(trimmed, roomCode);
+        if (requestId === requestIdRef.current) {
+          const data = res.data || [];
+          if (data.length > 0) {
+            cacheRef.current.set(cacheKey, data);
+          }
+          setResults(data);
+        }
+      } catch (err: any) {
+        if (requestId === requestIdRef.current) {
+          setErrorMessage(err?.message || 'Failed to load songs');
+        }
+      } finally {
+        if (requestId === requestIdRef.current) {
+          setLoading(false);
+        }
+      }
+    },
+    [roomCode]
+  );
 
   // Clear selection on modal open/close: closing cancels it, so nothing is queued without the confirm step
   useEffect(() => {
     if (visible) {
       setErrorMessage(null);
+      if (!hasLoadedInitialRef.current) {
+        hasLoadedInitialRef.current = true;
+        executeSearch('');
+      }
     }
     setSelectedSong(null);
-  }, [visible]);
+  }, [visible, executeSearch]);
 
   // The window listener below outlives renders; it calls the latest confirm handler
   const confirmAddRef = useRef<() => void>(() => {});
@@ -63,40 +112,15 @@ export const WebSongSearchModal: React.FC<WebSongSearchModalProps> = ({
     // The modal stays mounted while hidden: only listen while it is on screen
     if (!visible || !selectedSong || submitting) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Enter') confirmAddRef.current();
+      const target = e.target;
+      const inTextInput =
+        target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
+      if (e.key === 'Enter' && !inTextInput) confirmAddRef.current();
       if (e.key === 'Escape') setSelectedSong(null);
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [visible, selectedSong, submitting]);
-
-  // Execute search when debounced query changes
-  useEffect(() => {
-    if (!visible) return;
-
-    let cancelled = false;
-    const fetchSongs = async () => {
-      setLoading(true);
-      setErrorMessage(null);
-      try {
-        const res = await songApi.searchSongs(debouncedQuery, roomCode);
-        if (!cancelled) {
-          setResults(res.data || []);
-        }
-      } catch (err: any) {
-        if (!cancelled) {
-          setErrorMessage(err?.message || 'Failed to load songs');
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    fetchSongs();
-    return () => {
-      cancelled = true;
-    };
-  }, [debouncedQuery, roomCode, visible]);
 
   if (!visible) return null;
 
@@ -111,6 +135,12 @@ export const WebSongSearchModal: React.FC<WebSongSearchModalProps> = ({
   const handleCategoryClick = (cat: typeof CATEGORIES[0]) => {
     setActiveCategory(cat.id);
     setQuery(cat.query);
+    executeSearch(cat.query);
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    executeSearch(query);
   };
 
   const handleSelectSong = (song: Song) => {
@@ -193,34 +223,45 @@ export const WebSongSearchModal: React.FC<WebSongSearchModalProps> = ({
         </div>
 
         {/* Search Input Bar */}
-        <div className="p-4 pb-2 shrink-0">
-          <div className="relative flex items-center">
-            <Search className="w-4 h-4 absolute left-3.5 text-slate-400 pointer-events-none" />
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
-                if (e.target.value === '') setActiveCategory('all');
-              }}
-              placeholder="Search by song name or artist..."
-              autoFocus
-              className="w-full bg-[#1C1F30] border border-white/10 focus:border-[#8B5CF6] rounded-xl pl-10 pr-10 py-2.5 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#8B5CF6] transition-all"
-            />
-            {query && (
-              <button
-                onClick={() => {
-                  setQuery('');
-                  setActiveCategory('all');
+        <form onSubmit={handleSearchSubmit} className="p-4 pb-2 shrink-0">
+          <div className="relative flex items-center gap-2">
+            <div className="relative flex items-center flex-1">
+              <Search className="w-4 h-4 absolute left-3.5 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  if (e.target.value === '') setActiveCategory('all');
                 }}
-                className="absolute right-3 p-1 rounded-lg text-slate-400 hover:text-white transition-colors cursor-pointer"
-                title="Clear"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
+                placeholder="Search by song name or artist..."
+                autoFocus
+                className="w-full bg-[#1C1F30] border border-white/10 focus:border-[#8B5CF6] rounded-xl pl-10 pr-10 py-2.5 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#8B5CF6] transition-all"
+              />
+              {query && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQuery('');
+                    setActiveCategory('all');
+                    executeSearch('');
+                  }}
+                  className="absolute right-3 p-1 rounded-lg text-slate-400 hover:text-white transition-colors cursor-pointer"
+                  title="Clear"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2.5 rounded-xl bg-[#8B5CF6] hover:bg-[#7C3AED] disabled:opacity-50 text-white text-xs font-bold transition-colors cursor-pointer shrink-0"
+            >
+              Search
+            </button>
           </div>
-        </div>
+        </form>
 
         {/* Sleek Category Filter Chips */}
         <div className="px-4 py-1.5 flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0">
