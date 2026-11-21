@@ -58,6 +58,7 @@ export const WebSongSearchModal: React.FC<WebSongSearchModalProps> = ({
       }
 
       const cacheKey = trimmed.toLowerCase().replace(/\s+/g, ' ');
+      setSelectedSong(null);
       const cached = cacheRef.current.get(cacheKey);
       if (cached) {
         setErrorMessage(null);
@@ -111,7 +112,10 @@ export const WebSongSearchModal: React.FC<WebSongSearchModalProps> = ({
     // The modal stays mounted while hidden: only listen while it is on screen
     if (!visible || !selectedSong || submitting) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Enter') confirmAddRef.current();
+      const target = e.target;
+      const inTextInput =
+        target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
+      if (e.key === 'Enter' && !inTextInput) confirmAddRef.current();
       if (e.key === 'Escape') setSelectedSong(null);
     };
     window.addEventListener('keydown', handleKeyDown);

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { WebSongSearchModal } from './WebSongSearchModal';
 import { songApi } from '../../api/songApi';
+import { queueApi } from '../../api/queueApi';
 
 vi.mock('../../api/songApi', () => ({
   songApi: {
@@ -136,5 +137,36 @@ describe('WebSongSearchModal quota-saving search behavior', () => {
     await waitFor(() => {
       expect(songApi.searchSongs).toHaveBeenCalledTimes(2);
     });
+  });
+
+  it('does not queue the previously selected song when pressing Enter inside the search input', async () => {
+    render(
+      <WebSongSearchModal
+        visible={true}
+        roomCode="ABC123"
+        onClose={vi.fn()}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Bohemian Rhapsody Karaoke')).toBeTruthy();
+    });
+
+    // Select a song first
+    fireEvent.click(screen.getByRole('button', { name: /Queue/i }));
+    expect(screen.getByRole('button', { name: /Confirm & Add/i })).toBeTruthy();
+
+    // Focus search input, type a new query, and press Enter + submit form
+    const input = screen.getByPlaceholderText(/search by song name or artist/i);
+    fireEvent.change(input, { target: { value: 'hotel california' } });
+    fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    fireEvent.submit(input.closest('form')!);
+
+    await waitFor(() => {
+      expect(songApi.searchSongs).toHaveBeenLastCalledWith('hotel california', 'ABC123');
+    });
+
+    // Must not have queued the previously selected song
+    expect(queueApi.addToQueue).not.toHaveBeenCalled();
   });
 });
